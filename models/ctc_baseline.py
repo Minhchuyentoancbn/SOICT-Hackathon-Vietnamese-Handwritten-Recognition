@@ -78,7 +78,6 @@ class CTCBaseline(pl.LightningModule):
         log_probs = F.log_softmax(logits, dim=2)
         val_loss = criterion(log_probs, targets, input_lengths, target_lengths)
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
-        print('val_loss', val_loss)
 
         # Compute CER
         preds = ctc_decode(log_probs, method=self.args.decode_method, beam_size=self.args.beam_size)
@@ -91,7 +90,6 @@ class CTCBaseline(pl.LightningModule):
             target_length_counter += target_length
             total_cer += self.cer(torch.LongTensor(pred).view(1, -1), torch.LongTensor(real).view(1, -1))
         self.log('val_cer', total_cer / batch_size, reduce_fx='mean', prog_bar=True)
-        print('val_cer', total_cer / batch_size)
 
 
     def configure_optimizers(self):
