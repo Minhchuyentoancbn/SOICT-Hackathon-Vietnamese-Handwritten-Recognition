@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import logsumexp  # log(p1 + p2) = logsumexp([log_p1, log_p2])
 
 NINF = -1 * float('inf')
-DEFAULT_EMISSION_THRESHOLD = 0.001
+DEFAULT_EMISSION_THRESHOLD = 0#0.0001
 
 
 def _reconstruct(labels, blank=0):
