@@ -5,6 +5,7 @@ import torch.optim as optim
 import pytorch_lightning as pl
 
 from .ctc_decoder import ctc_decode
+from .utils import lr_update_rule
 from torchmetrics.text import CharErrorRate
 
 class CTCBaseline(pl.LightningModule):
@@ -77,6 +78,7 @@ class CTCBaseline(pl.LightningModule):
         log_probs = F.log_softmax(logits, dim=2)
         val_loss = criterion(log_probs, targets, input_lengths, target_lengths)
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
+        print('val_loss', val_loss)
 
         # Compute CER
         preds = ctc_decode(log_probs, method=self.args.decode_method, beam_size=self.args.beam_size)
@@ -89,6 +91,7 @@ class CTCBaseline(pl.LightningModule):
             target_length_counter += target_length
             total_cer += self.cer(torch.LongTensor(pred).view(1, -1), torch.LongTensor(real).view(1, -1))
         self.log('val_cer', total_cer / batch_size, reduce_fx='mean', prog_bar=True)
+        print('val_cer', total_cer / batch_size)
 
 
     def configure_optimizers(self):
@@ -114,7 +117,7 @@ class CTCBaseline(pl.LightningModule):
         if self.args.warmup_steps > 0:
             # Linear scheduler
             scheduler = optim.lr_scheduler.LambdaLR(
-                optimizer, lambda step: min(1.0, step / self.args.warmup_steps)
+                optimizer, lr_update_rule
             )
             return [optimizer, ], [scheduler, ]
 
