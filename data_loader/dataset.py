@@ -61,7 +61,7 @@ class HandWritttenDataset(Dataset):
             target_length = torch.LongTensor(target_length)
             return image, target, target_length
         else:
-            return image
+            return image, img_name
         
 
 def collate_fn(batch):
