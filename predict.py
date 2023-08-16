@@ -49,7 +49,7 @@ def predict(model, dataloader, label2char, decode_method, beam_size):
             preds = ctc_decode(log_probs, method=decode_method, beam_size=beam_size,
                                label2char=label2char)
             all_preds += preds
-            img_names += img_name.tolist()
+            img_names += list(img_name)
 
     all_preds = [''.join(pred) for pred in all_preds]
     return all_preds, img_names
