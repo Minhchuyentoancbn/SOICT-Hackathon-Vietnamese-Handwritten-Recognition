@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 import pytorch_lightning as pl
 
 from .ctc_decoder import ctc_decode
@@ -25,12 +26,16 @@ class CTCBaseline(pl.LightningModule):
         self.args = args
         self.example_input_array = torch.Tensor(64, 3, 32, 128)
         self.cer = CharErrorRate()
+        self.automatic_optimization = False
+
 
     def forward(self, x):
         return self.model(x)
 
 
     def training_step(self, batch, batch_idx):
+        opt = self.optimizers()
+        opt.zero_grad()
         # training step
         criterion = nn.CTCLoss(zero_infinity=True)
         images, targets, target_lengths = batch
@@ -44,7 +49,19 @@ class CTCBaseline(pl.LightningModule):
         log_probs = F.log_softmax(logits, dim=2)
         loss = criterion(log_probs, targets, input_lengths, target_lengths)
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
-        return loss
+        
+        # Update weights
+        self.manual_backward(loss)
+        # clip gradients
+        self.clip_gradients(opt, gradient_clip_val=5, gradient_clip_algorithm="norm")
+        opt.step()
+
+        # Update learning rate
+        scheduler = self.lr_schedulers()
+        if scheduler is not None:
+            scheduler.step()
+        # Log learning rate
+        self.log('lr', opt.param_groups[0]['lr'], prog_bar=True)
     
 
     def validation_step(self, batch, batch_idx):
@@ -75,8 +92,30 @@ class CTCBaseline(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
-            self.parameters(), 
-            lr=self.args.lr, weight_decay=self.args.weight_decay
-        )
+        optimizer_params = {
+            'lr': self.args.lr,
+            'weight_decay': self.args.weight_decay
+        }
+
+        if self.args.optimizer == 'adam':
+            optimizer = torch.optim.Adam(
+                self.parameters(), betas=(self.args.momentum, 0.999), **optimizer_params
+            )
+        elif self.args.optimizer == 'sgd':
+            optimizer = torch.optim.SGD(
+                self.parameters(), momentum=self.args.momentum, **optimizer_params
+            )
+        elif self.args.optimizer == 'adamw':
+            optimizer = torch.optim.AdamW(
+                self.parameters(), betas=(self.args.momentum, 0.999), **optimizer_params
+            )
+
+        # Linear warmup
+        if self.args.warmup_steps > 0:
+            # Linear scheduler
+            scheduler = optim.lr_scheduler.LambdaLR(
+                optimizer, lambda step: min(1.0, step / self.args.warmup_steps)
+            )
+            return [optimizer, ], [scheduler, ]
+
         return optimizer
