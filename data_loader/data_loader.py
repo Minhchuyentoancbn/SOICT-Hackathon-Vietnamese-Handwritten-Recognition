@@ -101,31 +101,37 @@ def get_data(
         name='public_test', transform=test_transform
     )
 
-    form_inds = np.arange(0, 51000)
-    wild_inds = np.arange(51000, 99000)
-    gan_inds = np.arange(99000, 103000)
-    np.random.shuffle(form_inds)
-    np.random.shuffle(wild_inds)
-    # Use GAN data only for training
-    train_inds = np.concatenate([
-        form_inds[5100:],
-        wild_inds[4800:],
-        gan_inds
-    ])
-    val_inds = np.concatenate([
-        form_inds[:5100],
-        wild_inds[:4800]
-    ])
-    train_set = Subset(train_dataset, train_inds)
-    val_set = Subset(val_dataset, val_inds)
-
+    if args.train:
+        form_inds = np.arange(0, 51000)
+        wild_inds = np.arange(51000, 99000)
+        gan_inds = np.arange(99000, 103000)
+        np.random.shuffle(form_inds)
+        np.random.shuffle(wild_inds)
+        # Use GAN data only for training
+        train_inds = np.concatenate([
+            form_inds[5100:],
+            wild_inds[4800:],
+            gan_inds
+        ])
+        val_inds = np.concatenate([
+            form_inds[:5100],
+            wild_inds[:4800]
+        ])
+        train_set = Subset(train_dataset, train_inds)
+        val_set = Subset(val_dataset, val_inds)
+    else:
+        train_set = train_dataset
+        
     train_loader = DataLoader(
         train_set, batch_size=batch_size,
         shuffle=True, drop_last=True, collate_fn=collate_fn
     )
-    val_loader = DataLoader(
-        val_set, batch_size=batch_size, shuffle=False, collate_fn=collate_fn
-    )
+    if args.train:
+        val_loader = DataLoader(
+            val_set, batch_size=batch_size, shuffle=False, collate_fn=collate_fn
+        )
+    else:
+        val_loader = None
     test_loader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False
     )

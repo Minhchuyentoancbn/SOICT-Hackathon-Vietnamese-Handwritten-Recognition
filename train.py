@@ -20,6 +20,7 @@ def parse_arguments(argv):
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--val_check_interval', type=float, default=0.25)
     parser.add_argument('--model_name', type=str)
+    parser.add_argument('--train', type=bool, default=True)
 
     # Optimization hyperparameters
     parser.add_argument('--epochs', type=int, default=10)
@@ -63,15 +64,26 @@ def ctc(args):
         monitor='val_loss',
         mode='min', patience=10, verbose=True
     )
-    # train model
-    trainer = pl.Trainer(
-        default_root_dir=f'checkpoints/{args.model_name}/',
-        max_epochs=args.epochs,
-        val_check_interval=args.val_check_interval,
-    )
-    trainer.fit(
-        model=pl_model, train_dataloaders=train_loader, val_dataloaders=val_loader
-    )
+
+    if args.train:
+        # train model
+        trainer = pl.Trainer(
+            default_root_dir=f'checkpoints/{args.model_name}/',
+            max_epochs=args.epochs,
+            val_check_interval=args.val_check_interval,
+        )
+        trainer.fit(
+            model=pl_model, train_dataloaders=train_loader, val_dataloaders=val_loader
+        )
+    else:
+        # train model
+        trainer = pl.Trainer(
+            default_root_dir=f'checkpoints/{args.model_name}/',
+            max_epochs=args.epochs,
+        )
+        trainer.fit(
+            model=pl_model, train_dataloaders=train_loader
+        )
 
     # Save models
     torch.save(pl_model.model.state_dict(), f'saved_models/{args.model_name}.pt')
