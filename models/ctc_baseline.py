@@ -90,6 +90,7 @@ class CTCBaseline(pl.LightningModule):
             target_length_counter += target_length
             total_cer += self.cer(torch.LongTensor(pred).view(1, -1), torch.LongTensor(real).view(1, -1))
         self.log('val_cer', total_cer / batch_size, reduce_fx='mean', prog_bar=True)
+        print(f'val_loss: {val_loss}. val_cer: {total_cer / batch_size}', end='\r')
 
 
     def configure_optimizers(self):
