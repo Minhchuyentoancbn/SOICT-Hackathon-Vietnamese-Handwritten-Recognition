@@ -11,7 +11,7 @@ from models.ctc_baseline import CTCBaseline
 from data_loader import get_data, IMG_WIDTH, IMG_HEIGHT, HandWritttenDataset
 from config import NUM_CLASSES
 from predict import predict
-from utils import initilize_parameters
+from utils import initilize_parameters, make_submission
 
 
 def parse_arguments(argv):
@@ -70,11 +70,10 @@ def crnn(args):
     print('Predicting...')
     print('-' * 50)
 
+    # Make submission
     label2char = HandWritttenDataset.LABEL2CHAR
     preds, img_names = predict(plcrnn, test_loader, label2char, args.decode_method, args.beam_size)
-
-    df = pd.DataFrame({'file_name': img_names, 'pred': preds})
-    df.to_csv(f'predictions/{args.model_name}.txt', index=False, header=False, sep='\t')
+    make_submission(preds, img_names, args)
 
 
 if __name__ == '__main__':

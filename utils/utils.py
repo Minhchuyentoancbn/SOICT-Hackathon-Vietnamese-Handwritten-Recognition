@@ -1,6 +1,8 @@
 import pickle
+import pandas as pd
 import torch
 import torch.nn as nn
+
 
 def load_char_dict():
     # Load char_dict from file
@@ -8,10 +10,12 @@ def load_char_dict():
         char_dict = pickle.load(handle)
     return char_dict
 
+
 def get_device():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'device: {device}')
     return device
+
 
 def initilize_parameters(model):
     # Initialize weights
@@ -31,5 +35,13 @@ def initilize_parameters(model):
                     nn.init.orthogonal_(param.data)
                 elif 'bias' in name:
                     nn.init.constant_(param.data, 0.0)
-
     return model
+
+
+def make_submission(preds, img_names, args):
+    for i in range(len(preds)):
+        if len(preds[i]) == 0:
+            preds[i] = 'ơ'
+
+    df = pd.DataFrame({'file_name': img_names, 'pred': preds})
+    df.to_csv(f'predictions/{args.model_name}.txt', index=False, header=False, sep='\t')
