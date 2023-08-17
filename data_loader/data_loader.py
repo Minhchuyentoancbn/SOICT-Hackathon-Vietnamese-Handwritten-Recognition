@@ -120,9 +120,10 @@ def get_data(
         train_set = Subset(train_dataset, train_inds)
         val_set = Subset(val_dataset, val_inds)
     else:
+        print('Using all training data for training')
+        print(f"Train set size: {len(train_set)}")
         train_set = train_dataset
 
-    print(f"Train set size: {len(train_set)}")
     train_loader = DataLoader(
         train_set, batch_size=batch_size,
         shuffle=True, drop_last=True, collate_fn=collate_fn
