@@ -32,6 +32,8 @@ def parse_arguments(argv):
     # Learning rate scheduler
     parser.add_argument('--warmup_steps', type=int, default=0)
 
+    # Data processing
+    parser.add_argument('--resize', type=int, default=1)
 
     # CTC decode hyperparameters
     parser.add_argument('--decode_method', type=str, default='beam_search')
@@ -41,7 +43,7 @@ def parse_arguments(argv):
 
 
 def crnn(args):
-    train_loader, val_loader, test_loader = get_data(args.batch_size, args.seed)
+    train_loader, val_loader, test_loader = get_data(args.batch_size, args.seed, args)
 
     pl.seed_everything(args.seed)
 

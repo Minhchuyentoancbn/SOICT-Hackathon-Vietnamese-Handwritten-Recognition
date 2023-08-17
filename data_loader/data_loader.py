@@ -11,6 +11,7 @@ from .dataset import HandWritttenDataset, collate_fn
 def get_data(
         batch_size: int = 64,
         seed: int = 42,
+        args=None
     ):
     """
     Get the train, validation and test data loaders
@@ -24,6 +25,9 @@ def get_data(
     seed: int (default: 42)
         The seed to use for the random number generator
 
+    args:
+        The arguments passed to the program
+        
     Returns:
     --------
         train_loader, val_loader, test_loader
@@ -31,32 +35,62 @@ def get_data(
     pl.seed_everything(seed)
     np.random.seed(seed)
     
-    train_transform = transforms.Compose([
-        # Gaussian Noise
-        transforms.GaussianBlur(3),
-        # Color Jitter
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
-        # Random Rotation
-        transforms.RandomRotation(15),
-        # Random Cutout
-        # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
-        # Radom Grayscale
-        transforms.RandomGrayscale(p=0.2),
-        transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            [0.5818, 0.5700, 0.5632], 
-            [0.1417, 0.1431, 0.1367]
-        )
-    ])
-    test_transform = transforms.Compose([
-        transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            [0.5818, 0.5700, 0.5632], 
-            [0.1417, 0.1431, 0.1367]
-        )
-    ])
+    if args.resize == 1:
+        train_transform = transforms.Compose([
+            # Gaussian Noise
+            transforms.GaussianBlur(3),
+            # Color Jitter
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+            # Random Rotation
+            transforms.RandomRotation(15),
+            # Random Cutout
+            # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
+            # Radom Grayscale
+            transforms.RandomGrayscale(p=0.2),
+            transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                [0.5818, 0.5700, 0.5632], 
+                [0.1417, 0.1431, 0.1367]
+            )
+        ])
+        test_transform = transforms.Compose([
+            transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                [0.5818, 0.5700, 0.5632], 
+                [0.1417, 0.1431, 0.1367]
+            )
+        ])
+    else:
+        train_transform = transforms.Compose([
+            # Gaussian Noise
+            transforms.GaussianBlur(3),
+            # Color Jitter
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+            # Random Rotation
+            transforms.RandomRotation(15),
+            # Random Cutout
+            # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
+            # Radom Grayscale
+            transforms.RandomGrayscale(p=0.2),
+            FixedHeightResize(32), 
+            FixedWidthPad(256),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                [0.5818, 0.5700, 0.5632], 
+                [0.1417, 0.1431, 0.1367]
+            )
+        ])
+        test_transform = transforms.Compose([
+            FixedHeightResize(32), 
+            FixedWidthPad(256),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                [0.5818, 0.5700, 0.5632], 
+                [0.1417, 0.1431, 0.1367]
+            )
+        ])
 
     train_dataset = HandWritttenDataset(
         TRAIN_DIR, LABEL_FILE,
