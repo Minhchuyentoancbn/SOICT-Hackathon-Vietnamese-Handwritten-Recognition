@@ -32,9 +32,9 @@ def get_data(
     np.random.seed(seed)
     
     train_transform = transforms.Compose([
-        # transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
-        FixedHeightResize(32),
-        FixedWidthPad(256),
+        transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+        # FixedHeightResize(32),
+        # FixedWidthPad(256),
         transforms.ToTensor(),
         transforms.Normalize(
             [0.5818, 0.5700, 0.5632], 
@@ -42,9 +42,9 @@ def get_data(
         )
     ])
     test_transform = transforms.Compose([
-        # transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
-        FixedHeightResize(32),
-        FixedWidthPad(256),
+        transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+        # FixedHeightResize(32),
+        # FixedWidthPad(256),
         transforms.ToTensor(),
         transforms.Normalize(
             [0.5818, 0.5700, 0.5632], 
