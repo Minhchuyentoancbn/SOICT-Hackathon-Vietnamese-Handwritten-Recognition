@@ -32,6 +32,14 @@ def get_data(
     np.random.seed(seed)
     
     train_transform = transforms.Compose([
+        # Gaussian Noise
+        transforms.GaussianBlur(3),
+        # Color Jitter
+        transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+        # Random Rotation
+        transforms.RandomRotation(15),
+        # Random Cutout
+        # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
         transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
         # FixedHeightResize(32),
         # FixedWidthPad(256),
