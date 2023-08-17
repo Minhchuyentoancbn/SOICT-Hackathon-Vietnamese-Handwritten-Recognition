@@ -5,7 +5,7 @@ import torch.optim as optim
 import pytorch_lightning as pl
 
 from .ctc_decoder import ctc_decode
-from .utils import lr_update_rule
+from .utils import rule
 from torchmetrics.text import CharErrorRate
 
 class CTCBaseline(pl.LightningModule):
@@ -112,10 +112,10 @@ class CTCBaseline(pl.LightningModule):
             )
 
         # Linear warmup
-        if self.args.warmup_steps > 0:
+        if self.args.warmup_steps:
             # Linear scheduler
             scheduler = optim.lr_scheduler.LambdaLR(
-                optimizer, lr_update_rule
+                optimizer, rule(self.args)
             )
             return [optimizer, ], [scheduler, ]
 

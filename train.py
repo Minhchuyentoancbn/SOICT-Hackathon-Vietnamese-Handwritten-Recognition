@@ -30,10 +30,10 @@ def parse_arguments(argv):
     parser.add_argument('--dropout', type=float, default=0.5)
 
     # Learning rate scheduler
-    parser.add_argument('--warmup_steps', type=int, default=0)
+    parser.add_argument('--warmup_steps', type=bool, default=False)
 
 
-    # Decode hyperparameters
+    # CTC decode hyperparameters
     parser.add_argument('--decode_method', type=str, default='beam_search')
     parser.add_argument('--beam_size', type=int, default=3)
 
