@@ -113,7 +113,7 @@ class CTCBaseline(pl.LightningModule):
             )
 
         # Linear warmup
-        if self.args.warmup_steps:
+        if self.args.warmup_steps > 0:
             # Linear scheduler
             scheduler = optim.lr_scheduler.LambdaLR(
                 optimizer, rule(self.args)
