@@ -40,9 +40,9 @@ def get_data(
         transforms.RandomRotation(15),
         # Random Cutout
         # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
+        # Radom Grayscale
+        transforms.RandomGrayscale(p=0.2),
         transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
-        # FixedHeightResize(32),
-        # FixedWidthPad(256),
         transforms.ToTensor(),
         transforms.Normalize(
             [0.5818, 0.5700, 0.5632], 
@@ -51,8 +51,6 @@ def get_data(
     ])
     test_transform = transforms.Compose([
         transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
-        # FixedHeightResize(32),
-        # FixedWidthPad(256),
         transforms.ToTensor(),
         transforms.Normalize(
             [0.5818, 0.5700, 0.5632], 
