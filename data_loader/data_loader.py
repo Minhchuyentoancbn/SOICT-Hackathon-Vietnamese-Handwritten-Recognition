@@ -44,7 +44,7 @@ def get_data(
             # Random Rotation
             transforms.RandomRotation(15),
             # Random Cutout
-            # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
+            transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
             # Radom Grayscale
             transforms.RandomGrayscale(p=0.2),
             transforms.Resize((args.height, args.width)),
@@ -71,7 +71,7 @@ def get_data(
             # Random Rotation
             transforms.RandomRotation(15),
             # Random Cutout
-            # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
+            transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
             # Radom Grayscale
             transforms.RandomGrayscale(p=0.2),
             FixedHeightResize(args.height), 
