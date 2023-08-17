@@ -10,7 +10,9 @@ class CRNN(nn.Module):
     """
 
     def __init__(self, img_channel, img_height, img_width, num_class,
-                 map_to_seq_hidden=64, rnn_hidden=256, leaky_relu=False):
+                 map_to_seq_hidden=64, rnn_hidden=256, leaky_relu=False,
+                 dropout=0.0
+                 ):
         """
         Arguments:
         ----------
@@ -35,6 +37,9 @@ class CRNN(nn.Module):
 
         leaky_relu: bool
             Whether to use leaky relu or relu as activation function
+
+        dropout: float
+            Dropout rate
         """
         
         super(CRNN, self).__init__()
@@ -48,6 +53,10 @@ class CRNN(nn.Module):
         self.rnn2 = nn.LSTM(2 * rnn_hidden, rnn_hidden, bidirectional=True)
 
         self.dense = nn.Linear(2 * rnn_hidden, num_class)
+
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
+
 
     def _cnn_backbone(self, img_channel, img_height, img_width, leaky_relu):
         assert img_height % 16 == 0
@@ -115,8 +124,16 @@ class CRNN(nn.Module):
         conv = conv.permute(2, 0, 1)  # (width, batch, feature)
         seq = self.map_to_seq(conv)
 
+        # Add dropout layer if specified
+        if hasattr(self, 'dropout'):
+            recurrent = self.dropout(recurrent)
+
         recurrent, _ = self.rnn1(seq)
         recurrent, _ = self.rnn2(recurrent)
+
+        # Add dropout layer if specified
+        if hasattr(self, 'dropout'):
+            recurrent = self.dropout(recurrent)
 
         output = self.dense(recurrent)
         return output  # shape: (seq_len, batch, num_class)

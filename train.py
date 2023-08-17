@@ -27,7 +27,7 @@ def parse_arguments(argv):
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--optimizer', type=str, default='adam')
     parser.add_argument('--weight_decay', type=float, default=1e-4)
-    parser.add_argument('--dropout', type=float, default=0.5)
+    parser.add_argument('--dropout', type=float, default=0.0)
 
     # Learning rate scheduler
     parser.add_argument('--warmup_steps', type=bool, default=False)
@@ -46,7 +46,7 @@ def crnn(args):
     pl.seed_everything(args.seed)
 
     # model
-    crnn = CRNN(3, IMG_HEIGHT, IMG_WIDTH, NUM_CLASSES)
+    crnn = CRNN(3, IMG_HEIGHT, IMG_WIDTH, NUM_CLASSES, dropout=args.dropout)
     crnn = initilize_parameters(crnn)
     plcrnn = CTCBaseline(crnn, args)
 
