@@ -1,8 +1,10 @@
 import pytorch_lightning as pl
 from torchvision import transforms
 from torch.utils.data import DataLoader, Subset
+from torchvision.transforms import functional as F
 
 import numpy as np
+import math
 from .config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, IMG_HEIGHT, IMG_WIDTH
 from .dataset import HandWritttenDataset, collate_fn
 
@@ -32,18 +34,18 @@ def get_data(
     train_transform = transforms.Compose([
         transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
         transforms.ToTensor(),
-        transforms.Normalize(
-            [0.5818, 0.5700, 0.5632], 
-            [0.1417, 0.1431, 0.1367]
-        )
+        # transforms.Normalize(
+        #     [0.5818, 0.5700, 0.5632], 
+        #     [0.1417, 0.1431, 0.1367]
+        # )
     ])
     test_transform = transforms.Compose([
         transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
         transforms.ToTensor(),
-        transforms.Normalize(
-            [0.5818, 0.5700, 0.5632], 
-            [0.1417, 0.1431, 0.1367]
-        )
+        # transforms.Normalize(
+        #     [0.5818, 0.5700, 0.5632], 
+        #     [0.1417, 0.1431, 0.1367]
+        # )
     ])
 
     train_dataset = HandWritttenDataset(
@@ -89,3 +91,15 @@ def get_data(
     )
 
     return train_loader, val_loader, test_loader
+
+
+
+class FixedHeightResize:
+    def __init__(self, size):
+        self.size = size
+        
+    def __call__(self, img):
+        w, h = img.size
+        aspect_ratio = float(h) / float(w)
+        new_w = math.ceil(self.size / aspect_ratio)
+        return F.resize(img, (self.size, new_w))
