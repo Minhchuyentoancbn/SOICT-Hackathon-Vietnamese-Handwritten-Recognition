@@ -1,7 +1,9 @@
-def lr_update_rule(step):
-    if step < 1500:
-        return  min(1.0, step / 1500)
-    elif step < 2000:
-        return 1.0
-    else:
-        return 0.1
+def rule(args):
+    train_steps = 93100 // args.batch_size * args.epochs
+    WARM_UP_STEP = args.warmup_steps
+    def lr_update_rule(step):
+        if step < 7000:
+            return  1.0
+        else:
+            return (train_steps - step)/(train_steps - WARM_UP_STEP)
+    return lr_update_rule
