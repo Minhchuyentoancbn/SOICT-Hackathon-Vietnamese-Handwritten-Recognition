@@ -55,7 +55,9 @@ class CRNN(nn.Module):
         self.dense = nn.Linear(2 * rnn_hidden, num_class)
 
         if dropout > 0:
-            self.dropout = nn.Dropout(dropout)
+            self.dropout1 = nn.Dropout(dropout)
+            self.dropout2 = nn.Dropout(dropout)
+        self.drop_out = dropout
 
 
     def _cnn_backbone(self, img_channel, img_height, img_width, leaky_relu):
@@ -125,15 +127,15 @@ class CRNN(nn.Module):
         seq = self.map_to_seq(conv)
 
         # Add dropout layer if specified
-        if hasattr(self, 'dropout'):
-            recurrent = self.dropout(recurrent)
+        if self.drop_out > 0:
+            seq = self.dropout1(seq)
 
         recurrent, _ = self.rnn1(seq)
         recurrent, _ = self.rnn2(recurrent)
 
         # Add dropout layer if specified
-        if hasattr(self, 'dropout'):
-            recurrent = self.dropout(recurrent)
+        if self.drop_out > 0:
+            recurrent = self.dropout2(recurrent)
 
         output = self.dense(recurrent)
         return output  # shape: (seq_len, batch, num_class)
