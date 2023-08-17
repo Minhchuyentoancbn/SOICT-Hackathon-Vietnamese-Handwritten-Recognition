@@ -25,10 +25,7 @@ class CTCBaseline(pl.LightningModule):
         super().__init__()
         self.model = model
         self.args = args
-        if args.resize == 1:
-            self.example_input_array = torch.Tensor(64, 3, 64, 256)
-        else:
-            self.example_input_array = torch.Tensor(64, 3, 32, 256)
+        self.example_input_array = torch.Tensor(64, 3, args.height, args.width)
         self.cer = CharErrorRate()
         self.automatic_optimization = False
 

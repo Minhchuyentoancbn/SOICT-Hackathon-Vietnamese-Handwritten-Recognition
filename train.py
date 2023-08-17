@@ -8,7 +8,7 @@ import pandas as pd
 from argparse import ArgumentParser
 from models.crnn import CRNN
 from models.ctc_baseline import CTCBaseline
-from data_loader import get_data, IMG_WIDTH, IMG_HEIGHT, HandWritttenDataset
+from data_loader import get_data, HandWritttenDataset
 from config import NUM_CLASSES
 from predict import predict
 from utils import initilize_parameters, make_submission
@@ -34,6 +34,8 @@ def parse_arguments(argv):
 
     # Data processing
     parser.add_argument('--resize', type=int, default=1)
+    parser.add_argument('--height', type=int, default=64)
+    parser.add_argument('--width', type=int, default=256)
 
     # CTC decode hyperparameters
     parser.add_argument('--decode_method', type=str, default='beam_search')
@@ -48,7 +50,7 @@ def crnn(args):
     pl.seed_everything(args.seed)
 
     # model
-    crnn = CRNN(3, IMG_HEIGHT, IMG_WIDTH, NUM_CLASSES, dropout=args.dropout)
+    crnn = CRNN(3, args.height, args.width, NUM_CLASSES, dropout=args.dropout)
     crnn = initilize_parameters(crnn)
     plcrnn = CTCBaseline(crnn, args)
 

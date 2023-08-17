@@ -5,7 +5,7 @@ from torchvision.transforms import functional as F
 
 import numpy as np
 import math
-from .config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, IMG_HEIGHT, IMG_WIDTH
+from .config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR
 from .dataset import HandWritttenDataset, collate_fn
 
 def get_data(
@@ -47,7 +47,7 @@ def get_data(
             # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
             # Radom Grayscale
             transforms.RandomGrayscale(p=0.2),
-            transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+            transforms.Resize((args.height, args.width)),
             transforms.ToTensor(),
             transforms.Normalize(
                 [0.5818, 0.5700, 0.5632], 
@@ -55,7 +55,7 @@ def get_data(
             )
         ])
         test_transform = transforms.Compose([
-            transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+            transforms.Resize((args.height, args.width)),
             transforms.ToTensor(),
             transforms.Normalize(
                 [0.5818, 0.5700, 0.5632], 
@@ -74,8 +74,8 @@ def get_data(
             # transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
             # Radom Grayscale
             transforms.RandomGrayscale(p=0.2),
-            FixedHeightResize(32), 
-            FixedWidthPad(256),
+            FixedHeightResize(args.height), 
+            FixedWidthPad(args.width),
             transforms.ToTensor(),
             transforms.Normalize(
                 [0.5818, 0.5700, 0.5632], 
@@ -83,8 +83,8 @@ def get_data(
             )
         ])
         test_transform = transforms.Compose([
-            FixedHeightResize(32), 
-            FixedWidthPad(256),
+            FixedHeightResize(args.height), 
+            FixedWidthPad(args.width),
             transforms.ToTensor(),
             transforms.Normalize(
                 [0.5818, 0.5700, 0.5632], 
