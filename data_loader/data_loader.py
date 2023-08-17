@@ -43,8 +43,6 @@ def get_data(
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             # Random Rotation
             transforms.RandomRotation(15),
-            # Random Cutout
-            transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
             # Radom Grayscale
             transforms.RandomGrayscale(p=0.2),
             transforms.Resize((args.height, args.width)),
@@ -70,8 +68,6 @@ def get_data(
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             # Random Rotation
             transforms.RandomRotation(15),
-            # Random Cutout
-            transforms.RandomErasing(p=0.5, scale=(0.02, 0.1)),
             # Radom Grayscale
             transforms.RandomGrayscale(p=0.2),
             FixedHeightResize(args.height), 
