@@ -35,7 +35,7 @@ def get_data(
         # Gaussian Noise
         transforms.GaussianBlur(3),
         # Color Jitter
-        transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         # Random Rotation
         transforms.RandomRotation(15),
         # Random Cutout
