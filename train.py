@@ -20,7 +20,7 @@ def parse_arguments(argv):
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--val_check_interval', type=float, default=0.25)
     parser.add_argument('--model_name', type=str)
-    parser.add_argument('--train', type=bool, default=True)
+    parser.add_argument('--train', type=int, default=1)
 
     # Optimization hyperparameters
     parser.add_argument('--epochs', type=int, default=10)

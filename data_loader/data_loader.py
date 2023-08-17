@@ -121,7 +121,6 @@ def get_data(
         val_set = Subset(val_dataset, val_inds)
     else:
         print('Using all training data for training')
-        print(f"Train set size: {len(train_set)}")
         train_set = train_dataset
 
     train_loader = DataLoader(
@@ -134,6 +133,7 @@ def get_data(
         )
     else:
         val_loader = None
+
     test_loader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False
     )
