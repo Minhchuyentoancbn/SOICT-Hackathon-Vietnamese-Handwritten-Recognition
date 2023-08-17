@@ -32,20 +32,24 @@ def get_data(
     np.random.seed(seed)
     
     train_transform = transforms.Compose([
-        transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+        # transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+        FixedHeightResize(32),
+        FixedWidthPad(256),
         transforms.ToTensor(),
-        # transforms.Normalize(
-        #     [0.5818, 0.5700, 0.5632], 
-        #     [0.1417, 0.1431, 0.1367]
-        # )
+        transforms.Normalize(
+            [0.5818, 0.5700, 0.5632], 
+            [0.1417, 0.1431, 0.1367]
+        )
     ])
     test_transform = transforms.Compose([
-        transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+        # transforms.Resize((IMG_HEIGHT, IMG_WIDTH)),
+        FixedHeightResize(32),
+        FixedWidthPad(256),
         transforms.ToTensor(),
-        # transforms.Normalize(
-        #     [0.5818, 0.5700, 0.5632], 
-        #     [0.1417, 0.1431, 0.1367]
-        # )
+        transforms.Normalize(
+            [0.5818, 0.5700, 0.5632], 
+            [0.1417, 0.1431, 0.1367]
+        )
     ])
 
     train_dataset = HandWritttenDataset(
@@ -93,7 +97,6 @@ def get_data(
     return train_loader, val_loader, test_loader
 
 
-
 class FixedHeightResize:
     def __init__(self, size):
         self.size = size
@@ -103,3 +106,15 @@ class FixedHeightResize:
         aspect_ratio = float(h) / float(w)
         new_w = math.ceil(self.size / aspect_ratio)
         return F.resize(img, (self.size, new_w))
+    
+# Pad to fixed width
+class FixedWidthPad:
+    def __init__(self, size):
+        self.size = size
+        
+    def __call__(self, img):
+        w, h = img.size
+        pad = self.size - w
+        pad_left = pad // 2
+        pad_right = pad - pad_left
+        return F.pad(img, (pad_left, 0, pad_right, 0), 0, 'constant')
