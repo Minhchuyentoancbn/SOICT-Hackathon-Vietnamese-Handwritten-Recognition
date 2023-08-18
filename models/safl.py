@@ -28,7 +28,7 @@ class SAFL(pl.LightningModule):
     """
 
     def __init__(self, num_class: int, eos: int = 187, s_dim: int = 512, att_dim: int = 512, 
-                 max_len: int = 20, stn_on: bool = True,  encoder_block=4, decoder_block=4, args=None):
+                 max_len: int = 20, stn_on: bool = False,  encoder_block=4, decoder_block=4, args=None):
         """
         Arguments:
         ----------
