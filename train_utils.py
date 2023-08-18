@@ -5,8 +5,9 @@ import pytorch_lightning as pl
 from models.crnn import CRNN
 from models.cnnctc import CNNCTC
 from models.ctc_baseline import CTCBaseline
+from models.safl import SAFL
 from data_loader import get_data, HandWritttenDataset
-from predict import predict
+from predict import predict_ctc, predict_safl
 from utils import initilize_parameters, make_submission
 
 def ctc(args):
@@ -57,7 +58,7 @@ def ctc(args):
 
     # Make submission
     label2char = HandWritttenDataset.LABEL2CHAR
-    preds, img_names = predict(pl_model, test_loader, label2char, args.decode_method, args.beam_size)
+    preds, img_names = predict_ctc(pl_model, test_loader, label2char, args.decode_method, args.beam_size)
     make_submission(preds, img_names, args)
 
 
@@ -67,5 +68,37 @@ def safl(args):
     pl.seed_everything(args.seed)
     NUM_CLASSES = train_set.rec_num_classes
     eos = train_set.char2id[train_set.EOS]
+    pad = train_set.char2id[train_set.PADDING]
+    model = SAFL(NUM_CLASSES, eos, args=args)
 
-    pass
+    # train model
+    if args.train:
+        # train model
+        trainer = pl.Trainer(
+            default_root_dir=f'checkpoints/{args.model_name}/',
+            max_epochs=args.epochs,
+            val_check_interval=args.val_check_interval,
+        )
+        trainer.fit(
+            model=model, train_dataloaders=train_loader, val_dataloaders=val_loader
+        )
+    else:
+        # train model
+        trainer = pl.Trainer(
+            default_root_dir=f'checkpoints/{args.model_name}/',
+            max_epochs=args.epochs,
+        )
+        trainer.fit(
+            model=model, train_dataloaders=train_loader
+        )
+
+    # Save models
+    torch.save(model.state_dict(), f'saved_models/{args.model_name}.pt')
+
+    print('Predicting...')
+    print('-' * 50)
+
+    # Make submission
+    label2char = train_set.id2char
+    preds, img_names = predict_safl(model, test_loader, label2char, eos, pad)
+    make_submission(preds, img_names, args)

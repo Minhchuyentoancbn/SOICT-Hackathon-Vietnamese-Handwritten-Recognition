@@ -130,9 +130,16 @@ class HandWrittenDatasetV2(HandWritttenDataset):
             return image, img_name
         
 
-def collate_fn(batch):
+def collate_fn_ctc(batch):
     images, targets, target_lengths = zip(*batch)
     images = torch.stack(images, 0)
     targets = torch.cat(targets, 0)
+    target_lengths = torch.cat(target_lengths, 0)
+    return images, targets, target_lengths
+
+def collate_fn(batch):
+    images, targets, target_lengths = zip(*batch)
+    images = torch.stack(images, 0)
+    targets = torch.stack(targets, 0)
     target_lengths = torch.cat(target_lengths, 0)
     return images, targets, target_lengths

@@ -6,7 +6,7 @@ from torchvision.transforms import functional as F
 import numpy as np
 import math
 from .config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR
-from .dataset import HandWritttenDataset, collate_fn, HandWrittenDatasetV2
+from .dataset import HandWritttenDataset, collate_fn_ctc, HandWrittenDatasetV2, collate_fn
 
 def get_data(
         batch_size: int = 64,
@@ -86,8 +86,10 @@ def get_data(
     
     if args.model_name in ['crnn', 'cnnctc']:
         dataset = HandWritttenDataset
+        collate = collate_fn_ctc
     elif args.model_name == 'safl':
         dataset = HandWrittenDatasetV2
+        collate = collate_fn
 
     train_dataset = dataset(
         TRAIN_DIR, LABEL_FILE,
@@ -127,11 +129,11 @@ def get_data(
 
     train_loader = DataLoader(
         train_set, batch_size=batch_size,
-        shuffle=True, drop_last=True, collate_fn=collate_fn
+        shuffle=True, drop_last=True, collate_fn=collate
     )
     if args.train:
         val_loader = DataLoader(
-            val_set, batch_size=batch_size, shuffle=False, collate_fn=collate_fn
+            val_set, batch_size=batch_size, shuffle=False, collate_fn=collate
         )
     else:
         val_loader = None
