@@ -9,5 +9,5 @@ def rule(args):
         if step < WARM_UP_STEP:
             return  1.0
         else:
-            return (train_steps - step)/(train_steps - WARM_UP_STEP)
+            return 0.1 #(train_steps - step)/(train_steps - WARM_UP_STEP)
     return lr_update_rule
