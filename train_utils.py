@@ -6,14 +6,14 @@ from models.crnn import CRNN
 from models.cnnctc import CNNCTC
 from models.ctc_baseline import CTCBaseline
 from data_loader import get_data, HandWritttenDataset
-from config import NUM_CLASSES
 from predict import predict
 from utils import initilize_parameters, make_submission
 
 def ctc(args):
     # Get the data
-    train_loader, val_loader, test_loader = get_data(args.batch_size, args.seed, args)
+    train_loader, val_loader, test_loader, _, _, _ = get_data(args.batch_size, args.seed, args)
     pl.seed_everything(args.seed)
+    NUM_CLASSES = len(HandWritttenDataset.CHARS) + 1
 
     # model
     if args.model_name == 'crnn':
@@ -62,4 +62,10 @@ def ctc(args):
 
 
 def safl(args):
+    # Get the data
+    train_loader, val_loader, test_loader, train_set, val_set, test_set = get_data(args.batch_size, args.seed, args)
+    pl.seed_everything(args.seed)
+    NUM_CLASSES = train_set.rec_num_classes
+    eos = train_set.char2id[train_set.EOS]
+
     pass
