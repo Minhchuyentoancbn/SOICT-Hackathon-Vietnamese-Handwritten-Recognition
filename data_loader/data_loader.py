@@ -6,7 +6,7 @@ from torchvision.transforms import functional as F
 import numpy as np
 import math
 from .config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR
-from .dataset import HandWritttenDataset, collate_fn
+from .dataset import HandWritttenDataset, collate_fn, HandWrittenDatasetV2
 
 def get_data(
         batch_size: int = 64,
@@ -30,7 +30,7 @@ def get_data(
         
     Returns:
     --------
-        train_loader, val_loader, test_loader
+        train_loader, val_loader, test_loader, train_set, val_set, test_set
     """
     pl.seed_everything(seed)
     np.random.seed(seed)
@@ -83,16 +83,21 @@ def get_data(
                 [0.1417, 0.1431, 0.1367]
             )
         ])
+    
+    if args.model_name in ['crnn', 'cnnctc']:
+        dataset = HandWritttenDataset
+    elif args.model_name == 'safl':
+        dataset = HandWrittenDatasetV2
 
-    train_dataset = HandWritttenDataset(
+    train_dataset = dataset(
         TRAIN_DIR, LABEL_FILE,
         name='train', transform=train_transform
     )
-    val_dataset = HandWritttenDataset(
+    val_dataset = dataset(
         TRAIN_DIR, LABEL_FILE,
         name='train', transform=test_transform
     )
-    test_dataset = HandWritttenDataset(
+    test_dataset = dataset(
         PUBLIC_TEST_DIR,
         name='public_test', transform=test_transform
     )
@@ -118,6 +123,7 @@ def get_data(
     else:
         print('Using all training data for training')
         train_set = train_dataset
+        val_set = None
 
     train_loader = DataLoader(
         train_set, batch_size=batch_size,
@@ -134,7 +140,7 @@ def get_data(
         test_dataset, batch_size=batch_size, shuffle=False
     )
 
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, train_dataset, val_dataset, test_dataset
 
 
 class FixedHeightResize:
