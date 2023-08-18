@@ -39,8 +39,6 @@ def get_data(
         train_transform = transforms.Compose([
             # Gaussian Noise
             transforms.GaussianBlur(3),
-            # Color Jitter
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             # Random Rotation
             transforms.RandomRotation(15),
             # Radom Grayscale
@@ -64,8 +62,6 @@ def get_data(
         train_transform = transforms.Compose([
             # Gaussian Noise
             transforms.GaussianBlur(3),
-            # Color Jitter
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             # Random Rotation
             transforms.RandomRotation(15),
             # Radom Grayscale
