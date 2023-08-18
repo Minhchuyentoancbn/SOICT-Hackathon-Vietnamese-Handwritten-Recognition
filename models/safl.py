@@ -178,12 +178,20 @@ class SAFL(pl.LightningModule):
         # Compute CER
         reals = targets.cpu().numpy().tolist()
         target_lengths = target_lengths.cpu().numpy().tolist()
-        target_length_counter = 0
         total_cer = 0
-        for pred, target_length in zip(preds, target_lengths):
-            real = reals[target_length_counter:target_length_counter + target_length]
-            target_length_counter += target_length
-            total_cer += self.cer(torch.LongTensor(pred.cpu()).view(1, -1), torch.LongTensor(real).view(1, -1))
+        for i, (pred, target_length) in enumerate(zip(preds, target_lengths)):
+            real = reals[i][ :target_length]
+            # Use prediction until <eos> token
+            char_pred = []
+            for i in pred:
+                if i == self.eos:
+                    break
+                elif i == self.eos + 1: # <pad> token
+                    continue
+                char_pred.append(i)
+            if len(char_pred) == 0:
+                char_pred = [self.eos]
+            total_cer += self.cer(torch.LongTensor(char_pred).view(1, -1), torch.LongTensor(real).view(1, -1))
         self.log('val_cer', total_cer / batch_size, reduce_fx='mean', prog_bar=True)
         print(f'val_loss: {loss}. val_cer: {total_cer / batch_size}', end='\r')
 
