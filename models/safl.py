@@ -148,7 +148,6 @@ class SAFL(pl.LightningModule):
         scheduler = self.lr_schedulers()
         if scheduler is not None:
             scheduler.step()
-            print(f'lr: {opt.param_groups[0]["lr"]}', end='\r')
         # Log learning rate
         self.log('lr', opt.param_groups[0]['lr'], prog_bar=True)
     
@@ -223,7 +222,10 @@ class SAFL(pl.LightningModule):
             # scheduler = optim.lr_scheduler.LambdaLR(
             #     optimizer, rule(self.args)
             # )
-            scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[4,5], gamma=0.1)
+            scheduler = optim.lr_scheduler.MultiStepLR(
+                optimizer, milestones=[4 * 39, 5 * 39], 
+                gamma=0.1
+            )
             return [optimizer, ], [scheduler, ]
 
         return optimizer
