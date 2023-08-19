@@ -104,7 +104,8 @@ def predict_safl(model, dataloader, label2char, eos, pad):
             detection_list = []
             for pred in preds:
                 detection = []
-                for p in pred:
+                for char in pred:
+                    p = char.item()
                     if p == eos:
                         break
                     elif p == pad:
