@@ -148,6 +148,7 @@ class SAFL(pl.LightningModule):
         scheduler = self.lr_schedulers()
         if scheduler is not None:
             scheduler.step()
+            print(f'lr: {opt.param_groups[0]["lr"]}', end='\r')
         # Log learning rate
         self.log('lr', opt.param_groups[0]['lr'], prog_bar=True)
     
