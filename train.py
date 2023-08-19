@@ -10,6 +10,7 @@ def parse_arguments(argv):
     parser.add_argument('--val_check_interval', type=float, default=0.25)
     parser.add_argument('--model_name', type=str)
     parser.add_argument('--train', type=int, default=1)
+    parser.add_argument('--num_samples', type=int, default=0)
 
     # Optimization hyperparameters
     parser.add_argument('--epochs', type=int, default=10)

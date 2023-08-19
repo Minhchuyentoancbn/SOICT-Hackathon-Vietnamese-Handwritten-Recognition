@@ -120,6 +120,9 @@ def get_data(
             form_inds[:5100],
             wild_inds[:4800]
         ])
+        if args.num_samples > 0:
+            train_inds = np.random.choice(train_inds, args.num_samples, replace=False)
+
         train_set = Subset(train_dataset, train_inds)
         val_set = Subset(val_dataset, val_inds)
     else:
