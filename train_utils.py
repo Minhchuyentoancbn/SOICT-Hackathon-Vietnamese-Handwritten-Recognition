@@ -69,7 +69,7 @@ def safl(args):
     NUM_CLASSES = train_set.rec_num_classes
     eos = train_set.char2id[train_set.EOS]
     pad = train_set.char2id[train_set.PADDING]
-    model = SAFL(NUM_CLASSES, eos, args=args)
+    model = SAFL(NUM_CLASSES, eos, args=args, stn_on=args.stn_on)
 
     # train model
     if args.train:

@@ -32,6 +32,9 @@ def parse_arguments(argv):
     parser.add_argument('--decode_method', type=str, default='beam_search')
     parser.add_argument('--beam_size', type=int, default=3)
 
+    # SAFL hyperparameters
+    parser.add_argument('--stn_on', type=int, default=0)
+
     return parser.parse_args(argv)
 
 
