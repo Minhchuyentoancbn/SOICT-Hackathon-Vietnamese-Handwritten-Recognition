@@ -128,6 +128,8 @@ def get_data(
     else:
         print('Using all training data for training')
         train_set = train_dataset
+        if args.num_samples > 0:
+            train_set = Subset(train_dataset, np.random.choice(len(train_dataset), args.num_samples, replace=False))
         val_set = None
 
     train_loader = DataLoader(
