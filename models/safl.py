@@ -206,7 +206,7 @@ class SAFL(pl.LightningModule):
 
         if self.args.optimizer == 'adam':
             optimizer = torch.optim.Adam(
-                self.parameters(), betas=(self.args.momentum, 0.999), **optimizer_params
+                self.parameters(), betas=(self.args.momentum, 0.98), eps=1e-9, **optimizer_params, 
             )
         elif self.args.optimizer == 'sgd':
             optimizer = torch.optim.SGD(
@@ -220,9 +220,10 @@ class SAFL(pl.LightningModule):
         # Linear decay
         if self.args.warmup_steps > 0:
             # Linear scheduler
-            scheduler = optim.lr_scheduler.LambdaLR(
-                optimizer, rule(self.args)
-            )
+            # scheduler = optim.lr_scheduler.LambdaLR(
+            #     optimizer, rule(self.args)
+            # )
+            scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[4,5], gamma=0.1)
             return [optimizer, ], [scheduler, ]
 
         return optimizer
