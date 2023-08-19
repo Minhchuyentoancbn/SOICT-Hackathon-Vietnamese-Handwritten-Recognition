@@ -32,6 +32,7 @@ def parse_arguments(argv):
     # CTC decode hyperparameters
     parser.add_argument('--decode_method', type=str, default='beam_search')
     parser.add_argument('--beam_size', type=int, default=3)
+    parser.add_argument('--feature_extractor', type=str, default='vgg')
 
     # SAFL hyperparameters
     parser.add_argument('--stn_on', type=int, default=0)

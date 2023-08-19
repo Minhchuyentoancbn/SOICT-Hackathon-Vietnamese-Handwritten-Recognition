@@ -18,10 +18,12 @@ def ctc(args):
 
     # model
     if args.model_name == 'crnn':
-        model = CRNN(3, args.height, args.width, NUM_CLASSES, dropout=args.dropout)
-        model = initilize_parameters(model)
+        model = CRNN(3, args.height, args.width, NUM_CLASSES, dropout=args.dropout, feature_extractor=args.feature_extractor)
+        if args.feature_extractor == 'vgg':
+            model = initilize_parameters(model)
     elif args.model_name == 'cnnctc':
         model = CNNCTC(NUM_CLASSES)
+        
     pl_model = CTCBaseline(model, args)
 
     # early_stop_callback = EarlyStopping(

@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
+from .utils import initialize_weights
+from .resnet import ResNet_FeatureExtractor
+
 
 class CRNN(nn.Module):
     """
@@ -11,7 +14,7 @@ class CRNN(nn.Module):
 
     def __init__(self, img_channel, img_height, img_width, num_class,
                  map_to_seq_hidden=64, rnn_hidden=256, leaky_relu=False,
-                 dropout=0.0
+                 dropout=0.0, feature_extractor='vgg'
                  ):
         """
         Arguments:
@@ -40,12 +43,24 @@ class CRNN(nn.Module):
 
         dropout: float
             Dropout rate
+
+        feature_extractor: str (default: 'vgg')
+            Name of feature extractor, either 'vgg' or 'resnet'
         """
         
         super(CRNN, self).__init__()
 
-        self.cnn, (output_channel, output_height, output_width) = \
-            self._cnn_backbone(img_channel, img_height, img_width, leaky_relu)
+        self.feature_extractor = feature_extractor
+
+        if feature_extractor == 'vgg':
+            self.cnn, (output_channel, output_height, output_width) = \
+                self.vgg_backbone(img_channel, img_height, img_width, leaky_relu)
+        elif feature_extractor == 'resnet':
+            self.cnn, (output_channel, output_height, output_width) = \
+                self.resnet_backbone(img_channel, img_height, img_width)
+            initialize_weights(self.cnn)
+        else:
+            raise ValueError(f'Unsupported feature extractor: {feature_extractor}')
 
         self.map_to_seq = nn.Linear(output_channel * output_height, map_to_seq_hidden)
 
@@ -60,7 +75,32 @@ class CRNN(nn.Module):
         self.drop_out = dropout
 
 
-    def _cnn_backbone(self, img_channel, img_height, img_width, leaky_relu):
+    def forward(self, images):
+        # shape of images: (batch, channel, height, width)
+
+        conv = self.cnn(images)
+        batch, channel, height, width = conv.size()
+
+        conv = conv.view(batch, channel * height, width)
+        conv = conv.permute(2, 0, 1)  # (width, batch, feature)
+        seq = self.map_to_seq(conv)
+
+        # Add dropout layer if specified
+        if self.drop_out > 0:
+            seq = self.dropout1(seq)
+
+        recurrent, _ = self.rnn1(seq)
+        recurrent, _ = self.rnn2(recurrent)
+
+        # Add dropout layer if specified
+        if self.drop_out > 0:
+            recurrent = self.dropout2(recurrent)
+
+        output = self.dense(recurrent)
+        return output  # shape: (seq_len, batch, num_class)
+    
+
+    def vgg_backbone(self, img_channel, img_height, img_width, leaky_relu):
         assert img_height % 16 == 0
         assert img_width % 4 == 0
 
@@ -115,27 +155,11 @@ class CRNN(nn.Module):
         output_channel, output_height, output_width = \
             channels[-1], img_height // 16 - 1, img_width // 4 - 1
         return cnn, (output_channel, output_height, output_width)
+    
 
-    def forward(self, images):
-        # shape of images: (batch, channel, height, width)
-
-        conv = self.cnn(images)
-        batch, channel, height, width = conv.size()
-
-        conv = conv.view(batch, channel * height, width)
-        conv = conv.permute(2, 0, 1)  # (width, batch, feature)
-        seq = self.map_to_seq(conv)
-
-        # Add dropout layer if specified
-        if self.drop_out > 0:
-            seq = self.dropout1(seq)
-
-        recurrent, _ = self.rnn1(seq)
-        recurrent, _ = self.rnn2(recurrent)
-
-        # Add dropout layer if specified
-        if self.drop_out > 0:
-            recurrent = self.dropout2(recurrent)
-
-        output = self.dense(recurrent)
-        return output  # shape: (seq_len, batch, num_class)
+    def resnet_backbone(self, img_channel, img_height, img_width):
+        output_channel = 512
+        output_height = img_height // 16 - 1
+        output_width = img_width // 4 + 1
+        cnn = ResNet_FeatureExtractor(img_channel, 512)
+        return cnn, (output_channel, output_height, output_width)

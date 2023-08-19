@@ -1,3 +1,5 @@
+from torch.nn import init
+
 def rule(args):
     if args.train:
         dset_size = 93100
@@ -13,3 +15,20 @@ def rule(args):
         else:
             return 0.1 #(train_steps - step)/(train_steps - WARM_UP_STEP)
     return lr_update_rule
+
+
+def initialize_weights(model):
+    # weight initialization
+    for name, param in model.named_parameters():
+        if 'localization_fc2' in name:
+            print(f'Skip {name} as it is already initialized')
+            continue
+        try:
+            if 'bias' in name:
+                init.constant_(param, 0.0)
+            elif 'weight' in name:
+                init.kaiming_normal_(param)
+        except Exception as e:  # for batchnorm.
+            if 'weight' in name:
+                param.data.fill_(1)
+            continue
