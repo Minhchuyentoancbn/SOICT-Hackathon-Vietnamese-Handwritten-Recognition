@@ -37,12 +37,12 @@ def get_data(
     
     if args.resize == 1:
         train_transform = transforms.Compose([
-            # Gaussian Noise
-            transforms.GaussianBlur(3),
-            # Random Rotation
-            transforms.RandomRotation(15),
-            # Radom Grayscale
-            transforms.RandomGrayscale(p=0.2),
+            # # Gaussian Noise
+            # transforms.GaussianBlur(3),
+            # # Random Rotation
+            # transforms.RandomRotation(15),
+            # # Radom Grayscale
+            # transforms.RandomGrayscale(p=0.2),
             transforms.Resize((args.height, args.width)),
             transforms.ToTensor(),
             transforms.Normalize(
