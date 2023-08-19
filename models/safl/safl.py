@@ -10,7 +10,6 @@ from .decoder_transformer import AttentionRecognitionHead
 from .tps_spatial_transformer import TPSSpatialTransformer
 from .stn_head import STNHead
 from .loss.sequenceCrossEntropyLoss import SequenceCrossEntropyLoss
-from .utils import rule
 
 
 class SAFL(pl.LightningModule):
@@ -216,16 +215,16 @@ class SAFL(pl.LightningModule):
                 self.parameters(), betas=(self.args.momentum, 0.999), **optimizer_params
             )
 
-        # Linear decay
-        if self.args.warmup_steps > 0:
-            # Linear scheduler
-            scheduler = optim.lr_scheduler.LambdaLR(
-                optimizer, rule(self.args)
-            )
-            # scheduler = optim.lr_scheduler.MultiStepLR(
-            #     optimizer, milestones=[4 * 39, 5 * 39], 
-            #     gamma=0.1
-            # )
-            return [optimizer, ], [scheduler, ]
+        # # Linear decay
+        # if self.args.warmup_steps > 0:
+        #     # Linear scheduler
+        #     scheduler = optim.lr_scheduler.LambdaLR(
+        #         optimizer, rule(self.args)
+        #     )
+        #     # scheduler = optim.lr_scheduler.MultiStepLR(
+        #     #     optimizer, milestones=[4 * 39, 5 * 39], 
+        #     #     gamma=0.1
+        #     # )
+        #     return [optimizer, ], [scheduler, ]
 
         return optimizer
