@@ -28,7 +28,7 @@ class SAFL(pl.LightningModule):
     """
 
     def __init__(self, num_class: int, eos: int = 187, s_dim: int = 512, att_dim: int = 512, 
-                 max_len: int = 20, stn_on: bool = True,  encoder_block=4, decoder_block=4, args=None):
+                 max_len: int = 20, stn_on: bool = False,  encoder_block=4, decoder_block=4, args=None):
         """
         Arguments:
         ----------
@@ -99,7 +99,7 @@ class SAFL(pl.LightningModule):
             )
 
         self.args = args
-        self.example_input_array = torch.Tensor(64, 3, 64, 256)
+        self.example_input_array = torch.Tensor(64, 3, args.height, args.width)
         self.cer = CharErrorRate()
         self.automatic_optimization = False
 
@@ -180,7 +180,8 @@ class SAFL(pl.LightningModule):
         target_lengths = target_lengths.cpu().numpy().tolist()
         total_cer = 0
         for i, (pred, target_length) in enumerate(zip(preds, target_lengths)):
-            real = reals[i][ :target_length]
+            assert target_length > 1, "Target length must be greater than 1"
+            real = reals[i][ :target_length - 1]
             # Use prediction until <eos> token
             char_pred = []
             for i in pred:
