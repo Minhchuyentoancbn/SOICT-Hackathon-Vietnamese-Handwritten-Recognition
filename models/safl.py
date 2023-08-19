@@ -141,7 +141,7 @@ class SAFL(pl.LightningModule):
         # Update weights
         self.manual_backward(loss)
         # clip gradients
-        self.clip_gradients(opt, gradient_clip_val=5, gradient_clip_algorithm="norm")
+        self.clip_gradients(opt, gradient_clip_val=1, gradient_clip_algorithm="norm")
         opt.step()
 
         # Update learning rate
