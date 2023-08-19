@@ -219,13 +219,13 @@ class SAFL(pl.LightningModule):
         # Linear decay
         if self.args.warmup_steps > 0:
             # Linear scheduler
-            # scheduler = optim.lr_scheduler.LambdaLR(
-            #     optimizer, rule(self.args)
-            # )
-            scheduler = optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=[4 * 39, 5 * 39], 
-                gamma=0.1
+            scheduler = optim.lr_scheduler.LambdaLR(
+                optimizer, rule(self.args)
             )
+            # scheduler = optim.lr_scheduler.MultiStepLR(
+            #     optimizer, milestones=[4 * 39, 5 * 39], 
+            #     gamma=0.1
+            # )
             return [optimizer, ], [scheduler, ]
 
         return optimizer
