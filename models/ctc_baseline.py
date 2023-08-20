@@ -112,6 +112,10 @@ class CTCBaseline(pl.LightningModule):
             optimizer = torch.optim.AdamW(
                 self.parameters(), betas=(self.args.momentum, 0.999), **optimizer_params
             )
+        elif self.args.optimizer == 'adadelta':
+            optimizer = torch.optim.Adadelta(
+                self.parameters(), **optimizer_params, eps=1e-8, rho=0.95
+            )
 
         # Linear warmup
         if self.args.warmup_steps > 0:
