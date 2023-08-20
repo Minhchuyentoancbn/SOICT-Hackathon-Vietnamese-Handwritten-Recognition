@@ -5,10 +5,11 @@ import torch.optim as optim
 import pytorch_lightning as pl
 from torchmetrics.text import CharErrorRate
 
+import sys
 from .utils import initialize_weights, rule
+from .transformation import TPS_SpatialTransformerNetwork
 from .resnet import ResNet_FeatureExtractor
 from .sequence_modeling import BidirectionalLSTM
-import sys
 from .prediction import Attention
 from .utils import parse_arguments
 
@@ -50,6 +51,14 @@ class AttentionEncoderDecoder(pl.LightningModule):
         """
         super(AttentionEncoderDecoder, self).__init__()
 
+        if global_args.stn_on:
+            self.tps = TPS_SpatialTransformerNetwork(
+                20, (img_height, img_width), (img_height, img_width), 3
+            )
+        else:
+            self.tps = nn.Identity()
+
+
         self.feature_extractor, (output_channel, output_height, output_width) = self.resnet_backbone(3, img_height, img_width)
 
         self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
@@ -87,6 +96,9 @@ class AttentionEncoderDecoder(pl.LightningModule):
 
     def forward(self, images, text):
         # shape of images: (B, C, H, W)
+
+        # Transformation
+        images = self.tps(images)
 
         # Feature extraction
         visual_feature = self.feature_extractor(images)
