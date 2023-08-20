@@ -73,7 +73,8 @@ class CTCBaseline(pl.LightningModule):
 
         # Compute loss
         self.model.eval()
-        logits = self.model(images)
+        with torch.no_grad():
+            logits = self.model(images)
         input_lengths = torch.LongTensor([logits.size(0)] * batch_size)
         log_probs = F.log_softmax(logits, dim=2)
         val_loss = criterion(log_probs, targets, input_lengths, target_lengths)
