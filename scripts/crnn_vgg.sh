@@ -1,0 +1,12 @@
+python train.py \
+--epochs 45 \
+--lr 1e-4 \
+--weight_decay 1e-2 \
+--batch_size 128 \
+--dropout 0.2 \
+--model_name crnn \
+--val_check_interval 1.0 \
+--optimizer adamw \
+--decode_method greedy \
+--warmup_steps 30 \
+--train 0
