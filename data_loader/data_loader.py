@@ -87,7 +87,7 @@ def get_data(
     if args.model_name in ['crnn', 'cnnctc']:
         dataset = HandWritttenDataset
         collate = collate_fn_ctc
-    elif args.model_name == 'safl':
+    else:
         dataset = HandWrittenDatasetV2
         collate = collate_fn
 
@@ -161,6 +161,7 @@ class FixedHeightResize:
         aspect_ratio = float(h) / float(w)
         new_w = math.ceil(self.size / aspect_ratio)
         return F.resize(img, (self.size, new_w))
+    
     
 # Pad to fixed width
 class FixedWidthPad:

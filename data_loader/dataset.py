@@ -67,7 +67,7 @@ class HandWritttenDataset(Dataset):
     
 
 class HandWrittenDatasetV2(HandWritttenDataset):
-  """Hand Writtten dataset with PAD, EOS tokens."""
+  """Hand Writtten dataset with ['GO'], ['s'] tokens."""
 
   def __init__(self, root_dir: str, label_file: str = None, name: str = 'train', transform=None, max_len: int = 20):
     """
@@ -91,16 +91,7 @@ class HandWrittenDatasetV2(HandWritttenDataset):
     super().__init__(root_dir, label_file, name, transform)
     self.transform = transform
     self.max_len = max_len
-
-    self.EOS = 'EOS'
-    self.PADDING = 'PADDING'
-    self.voc = list(HandWritttenDataset.CHARS)
-    self.voc.append(self.EOS)
-    self.voc.append(self.PADDING)
-
-    self.char2id = dict(zip(self.voc, range(len(self.voc))))
-    self.id2char = dict(zip(range(len(self.voc)), self.voc))
-    self.rec_num_classes = len(self.voc)
+    
 
   def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -117,15 +108,7 @@ class HandWrittenDatasetV2(HandWritttenDataset):
 
         if self.labels is not None:
             label = self.labels.iloc[idx, 1]
-            target = [self.char2id[char] for char in label]
-            # Add EOS token
-            target.append(self.char2id[self.EOS])
-            target_length = [len(target)]
-            # Add padding
-            target = target + [self.char2id[self.PADDING]] * (self.max_len - len(target))
-            target = torch.LongTensor(target)
-            target_length = torch.LongTensor(target_length)
-            return image, target, target_length
+            return image, label
         else:
             return image, img_name
         
@@ -137,9 +120,8 @@ def collate_fn_ctc(batch):
     target_lengths = torch.cat(target_lengths, 0)
     return images, targets, target_lengths
 
+
 def collate_fn(batch):
-    images, targets, target_lengths = zip(*batch)
+    images, labels = zip(*batch)
     images = torch.stack(images, 0)
-    targets = torch.stack(targets, 0)
-    target_lengths = torch.cat(target_lengths, 0)
-    return images, targets, target_lengths
+    return images, labels
