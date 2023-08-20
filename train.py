@@ -1,3 +1,4 @@
+import torch
 import sys
 import warnings
 from argparse import ArgumentParser
@@ -37,6 +38,9 @@ def parse_arguments(argv):
     # SAFL hyperparameters
     parser.add_argument('--stn_on', type=int, default=0)
 
+    # Pytorch settings
+    parser.add_argument('--benchmark', type=int, default=0)
+
     return parser.parse_args(argv)
 
 
@@ -44,6 +48,9 @@ def parse_arguments(argv):
 if __name__ == '__main__':
     warnings.filterwarnings('ignore')
     args = parse_arguments(sys.argv[1:])
+
+    if args.benchmark:
+        torch.backends.cudnn.benchmark = True
 
     if args.model_name in ['crnn', 'cnnctc']:
         ctc(args)
