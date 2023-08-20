@@ -55,16 +55,7 @@ def predict_ctc(model, dataloader, label2char, decode_method, beam_size):
     return all_preds, img_names
 
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-import tqdm
-from utils import get_device
-from models.ctc_decoder import ctc_decode
-
-
-def predict_safl(model, dataloader, label2char, eos, pad):
+def predict_aed(model, dataloader, coverter, max_length=20):
     """
     Predict the result of the model
 
@@ -76,46 +67,55 @@ def predict_safl(model, dataloader, label2char, eos, pad):
     dataloader: torch.utils.data.DataLoader
         The dataloader of the dataset
 
-    label2char: dict
-        The dictionary of the label to character
+    coverter: AttnLabelConverter
+        The converter used to convert the label to character
 
-    eos: int
-        The id of the end of sentence token
-
-    pad: int
-        The id of the padding token
+    max_length: int
+        The maximum length of the sequence
 
     Returns:
     --------
     all_preds: list
         The list of the prediction result
-    """
-    model.eval()
 
+    img_names_lst: list
+        The list of the image names
+
+    confidences: list
+        The list of the confidence of the prediction
+    """
+    
     all_preds = []
-    img_names = []
+    img_names_lst = []
+    confidences = []
+
     device = get_device()
     model = model.to(device)
+    model.eval()
 
     with torch.no_grad():
-        for data, img_name in dataloader:
+        for data, img_names in dataloader:
+            batch_size = data.size(0)
             images = data.to(device)
-            preds, pred_scores = model(images)
-            detection_list = []
-            for pred in preds:
-                detection = []
-                for char in pred:
-                    p = char.item()
-                    if p == eos:
-                        break
-                    elif p == pad:
-                        continue
-                    else:
-                        detection.append(label2char[p])
-                detection_list.append(detection)
+            length_for_pred = torch.IntTensor([max_length] * batch_size).to(device)
+            text_for_pred = torch.LongTensor(batch_size, max_length + 1).fill_(0).to(device)
 
-            all_preds += detection_list
-            img_names += list(img_name)
+            preds = model(images, text_for_pred)
+            _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+            preds_str = coverter.decode(preds_index, length_for_pred)
 
-    all_preds = [''.join(pred) for pred in all_preds]
-    return all_preds, img_names
+            all_preds += preds_str
+            img_names_lst += list(img_names)
+
+            # Compute confidence score
+            preds_prob = F.softmax(preds, dim=2)
+            preds_max_prob, _ = preds_prob.max(dim=2)
+
+            for pred, pred_max_prob in zip(preds_str, preds_max_prob):
+                pred_EOS = pred.find('[s]')
+                pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
+                pred_max_prob = pred_max_prob[:pred_EOS]
+                confidence_score = pred_max_prob.cumprod(dim=0)[-1]
+                confidences.append(confidence_score.item())
+
+    return all_preds, img_names_lst, confidences
