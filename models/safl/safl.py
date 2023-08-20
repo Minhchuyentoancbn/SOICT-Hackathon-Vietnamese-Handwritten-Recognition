@@ -159,17 +159,18 @@ class SAFL(pl.LightningModule):
         # Compute loss
         self.eval()
 
-        if self.stn_on:
-            # input images are downsampled before being fed into stn_head.
-            stn_input = F.interpolate(x, self.tps_inputsize, mode='bilinear', align_corners=True)
-            stn_img_feat, ctrl_points = self.stn_head(stn_input)
-            x, _ = self.tps(x, ctrl_points)
-        
-        encoder_feats = self.encoder(x)
-        encoder_feats = encoder_feats.contiguous()
+        with torch.no_grad():
+            if self.stn_on:
+                # input images are downsampled before being fed into stn_head.
+                stn_input = F.interpolate(x, self.tps_inputsize, mode='bilinear', align_corners=True)
+                stn_img_feat, ctrl_points = self.stn_head(stn_input)
+                x, _ = self.tps(x, ctrl_points)
+            
+            encoder_feats = self.encoder(x)
+            encoder_feats = encoder_feats.contiguous()
 
-        preds_ = self.decoder([encoder_feats, targets, target_lengths])
-        preds, pred_scores = self.decoder.sample(encoder_feats)
+            preds_ = self.decoder([encoder_feats, targets, target_lengths])
+            preds, pred_scores = self.decoder.sample(encoder_feats)
 
         loss = self.criterion(preds_, targets, target_lengths)
         self.log('val_loss', loss, reduce_fx='mean', prog_bar=True)
