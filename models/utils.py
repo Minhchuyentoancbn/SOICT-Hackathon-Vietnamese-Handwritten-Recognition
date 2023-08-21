@@ -32,7 +32,7 @@ def parse_arguments(argv):
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--optimizer', type=str, default='adam')
-    parser.add_argument('--weight_decay', type=float, default=1e-4)
+    parser.add_argument('--weight_decay', type=float, default=0.0)
     parser.add_argument('--dropout', type=float, default=0.0)
 
     # Learning rate scheduler
