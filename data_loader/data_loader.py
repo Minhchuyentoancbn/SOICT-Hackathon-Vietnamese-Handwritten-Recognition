@@ -38,23 +38,16 @@ def get_data(
     
     if args.grayscale:
         grayscale = transforms.Grayscale(3)
-        tensor_normalize = [
-            transforms.Grayscale(3),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.5818, 0.5700, 0.5632], 
-                [0.1417, 0.1431, 0.1367]
-            )
-        ]
     else:
         grayscale = transforms.RandomGrayscale(p=0.2)
-        tensor_normalize = [
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.5818, 0.5700, 0.5632], 
-                [0.1417, 0.1431, 0.1367]
-            )
-        ]
+
+    tensor_normalize = [
+        transforms.ToTensor(),
+        transforms.Normalize(
+            [0.5818, 0.5700, 0.5632], 
+            [0.1417, 0.1431, 0.1367]
+        )
+    ]
 
     augmentations = [
         # Gaussian Noise
@@ -71,18 +64,23 @@ def get_data(
         grayscale
     ]
 
-
-
     if args.resize == 1:
         train_transform = transforms.Compose([
             *augmentations,
             transforms.Resize((args.height, args.width)),
             *tensor_normalize
         ])
-        test_transform = transforms.Compose([
-            transforms.Resize((args.height, args.width)),
-            *tensor_normalize
-        ])
+        if args.grayscale:
+            test_transform = transforms.Compose([
+                transforms.Grayscale(3),
+                transforms.Resize((args.height, args.width)),
+                *tensor_normalize
+            ])
+        else:
+            test_transform = transforms.Compose([
+                transforms.Resize((args.height, args.width)),
+                *tensor_normalize
+            ])
     else:
         train_transform = transforms.Compose([
             *augmentations,
@@ -90,11 +88,19 @@ def get_data(
             FixedWidthPad(args.width),
             *tensor_normalize
         ])
-        test_transform = transforms.Compose([
-            FixedHeightResize(args.height), 
-            FixedWidthPad(args.width),
-            *tensor_normalize
-        ])
+        if args.grayscale:
+            test_transform = transforms.Compose([
+                transforms.Grayscale(3),
+                FixedHeightResize(args.height), 
+                FixedWidthPad(args.width),
+                *tensor_normalize
+            ])
+        else:
+            test_transform = transforms.Compose([
+                FixedHeightResize(args.height), 
+                FixedWidthPad(args.width),
+                *tensor_normalize
+            ])
     
     if args.model_name in ['crnn', 'cnnctc']:
         dataset = HandWritttenDataset
