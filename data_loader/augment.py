@@ -31,9 +31,9 @@ def disk(radius, alias_blur=0.1, dtype=np.float32):
 
 
 class GaussianNoise(object):
-    def __init__(self, rng=None, mag=-1, prob=1.):
+    def __init__(self, rng=None, mag=-1, prob=1., seed=42):
         super().__init__()
-        self.rng = np.random.default_rng() if rng is None else rng
+        self.rng = np.random.default_rng(seed) if rng is None else rng
         self.mag = mag
         self.prob = prob
 
@@ -55,9 +55,9 @@ class GaussianNoise(object):
 
 
 class DefocusBlur(object):
-    def __init__(self, rng=None, mag=-1, prob=1.):
+    def __init__(self, rng=None, mag=-1, prob=1., seed=42):
         super().__init__()
-        self.rng = np.random.default_rng() if rng is None else rng
+        self.rng = np.random.default_rng(seed) if rng is None else rng
         self.mag = mag
         self.prob = prob
 
@@ -100,9 +100,9 @@ class DefocusBlur(object):
 
 
 class MotionBlur(object):
-    def __init__(self, rng=None, mag=-1, prob=1.):
+    def __init__(self, rng=None, mag=-1, prob=1., seed=42):
         super().__init__()
-        self.rng = np.random.default_rng() if rng is None else rng
+        self.rng = np.random.default_rng(seed) if rng is None else rng
         self.mag = mag
         self.prob = prob
 
@@ -137,9 +137,9 @@ class MotionBlur(object):
 
 class Brightness(object):
     
-    def __init__(self, rng=None, mag=-1, prob=1.):
+    def __init__(self, rng=None, mag=-1, prob=1., seed=42):
         super().__init__()
-        self.rng = np.random.default_rng() if rng is None else rng
+        self.rng = np.random.default_rng(seed) if rng is None else rng
         self.mag = mag
         self.prob = prob
 
@@ -187,11 +187,12 @@ class Brightness(object):
 
 class JpegCompression(object):
     
-    def __init__(self, rng=None, mag=-1, prob=1.):
+    def __init__(self, rng=None, mag=-1, prob=1., seed=42):
         super().__init__()
-        self.rng = np.random.default_rng() if rng is None else rng
+        self.rng = np.random.default_rng(seed) if rng is None else rng
         self.mag = mag
         self.prob = prob
+
     def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
@@ -209,11 +210,12 @@ class JpegCompression(object):
 
 
 class Pixelate(object):
-    def __init__(self, rng=None, mag=-1, prob=1.):
+    def __init__(self, rng=None, mag=-1, prob=1., seed=42):
         super().__init__()
-        self.rng = np.random.default_rng() if rng is None else rng
+        self.rng = np.random.default_rng(seed) if rng is None else rng
         self.mag = mag
         self.prob = prob
+
     def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
