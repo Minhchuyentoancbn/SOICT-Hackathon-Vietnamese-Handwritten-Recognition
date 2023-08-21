@@ -39,6 +39,8 @@ def get_data(
     augmentations = [
         # Gaussian Noise
         transforms.GaussianBlur(3),
+        # Defocus Blur
+        DefocusBlur(seed=seed, prob=0.1),
         # Random Rotation
         transforms.RandomRotation(15),
         # Radom Grayscale
