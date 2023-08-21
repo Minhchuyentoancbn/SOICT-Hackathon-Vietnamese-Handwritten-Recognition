@@ -111,6 +111,7 @@ class MotionBlur(object):
 
         return img
 
+
 class Brightness(object):
     
     def __init__(self, rng=None, mag=-1, prob=1., seed=42):
