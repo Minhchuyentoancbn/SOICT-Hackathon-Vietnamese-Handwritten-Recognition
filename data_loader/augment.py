@@ -1,14 +1,11 @@
-
 from io import BytesIO
 
 import numpy as np
 import skimage as sk
 from PIL import Image, ImageOps
-from skimage import color
-import torch
 import cv2
 from PIL import Image, ImageOps
-#from wand.image import Image as WandImage
+from wand.image import Image as WandImage
 
 
 def disk(radius, alias_blur=0.1, dtype=np.float32):
@@ -33,14 +30,14 @@ def disk(radius, alias_blur=0.1, dtype=np.float32):
 '''
 
 
-class GaussianNoise(torch.nn.Module):
+class GaussianNoise(object):
     def __init__(self, rng=None, mag=-1, prob=1.):
         super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
         self.mag = mag
         self.prob = prob
 
-    def forward(self, img):
+    def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
 
@@ -57,14 +54,14 @@ class GaussianNoise(torch.nn.Module):
         return Image.fromarray(img.astype(np.uint8))
 
 
-class DefocusBlur(torch.nn.Module):
+class DefocusBlur(object):
     def __init__(self, rng=None, mag=-1, prob=1.):
         super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
         self.mag = mag
         self.prob = prob
 
-    def forward(self, img):
+    def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
 
@@ -102,14 +99,14 @@ class DefocusBlur(torch.nn.Module):
         return img
 
 
-class MotionBlur(torch.nn.Module):
+class MotionBlur(object):
     def __init__(self, rng=None, mag=-1, prob=1.):
         super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
         self.mag = mag
         self.prob = prob
 
-    def forward(self, img):
+    def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
 
@@ -138,14 +135,15 @@ class MotionBlur(torch.nn.Module):
 
         return img
 
-class Brightness(torch.nn.Module):
+class Brightness(object):
     
     def __init__(self, rng=None, mag=-1, prob=1.):
         super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
         self.mag = mag
         self.prob = prob
-    def forward(self, img):
+
+    def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
 
@@ -187,14 +185,14 @@ class Brightness(torch.nn.Module):
         # return Image.fromarray(img.astype(np.uint8))
 
 
-class JpegCompression(torch.nn.Module):
+class JpegCompression(object):
     
     def __init__(self, rng=None, mag=-1, prob=1.):
         super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
         self.mag = mag
         self.prob = prob
-    def forward(self, img):
+    def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
 
@@ -210,13 +208,13 @@ class JpegCompression(torch.nn.Module):
         return Image.open(output)
 
 
-class Pixelate(torch.nn.Module):
+class Pixelate(object):
     def __init__(self, rng=None, mag=-1, prob=1.):
         super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
         self.mag = mag
         self.prob = prob
-    def forward(self, img):
+    def __call__(self, img):
         if self.rng.uniform(0, 1) > self.prob:
             return img
 
