@@ -42,7 +42,7 @@ def get_data(
         # Random Rotation
         transforms.RandomRotation(15),
         # Radom Grayscale
-        # transforms.RandomGrayscale(p=0.2),
+        transforms.RandomGrayscale(p=0.2),
     ]
 
     if args.resize == 1:
