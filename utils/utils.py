@@ -40,6 +40,9 @@ def initilize_parameters(model):
 
 def make_submission(preds, img_names, args):
     for i in range(len(preds)):
+        # Remove [s] and [GO] tokens
+        preds[i] = preds[i].replace('[s]', '')
+        preds[i] = preds[i].replace('[GO]', '')
         if len(preds[i]) == 0:
             preds[i] = 'ơ'
 
