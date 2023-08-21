@@ -41,8 +41,10 @@ def get_data(
         transforms.GaussianBlur(3),
         # Defocus Blur
         DefocusBlur(seed=seed, prob=0.1),
-        # Motion Blur
-        MotionBlur(seed=seed, prob=0.1),
+        # Bright ness
+        transforms.ColorJitter(brightness=0.1),
+        # Camera
+        JpegCompression(seed=seed, prob=0.1),
         # Random Rotation
         transforms.RandomRotation(15),
         # Radom Grayscale
