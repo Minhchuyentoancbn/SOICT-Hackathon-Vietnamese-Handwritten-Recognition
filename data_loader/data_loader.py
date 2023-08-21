@@ -47,43 +47,35 @@ def get_data(
         transforms.RandomGrayscale(p=0.2),
     ]
 
+    tensor_normalize = [
+        transforms.ToTensor(),
+        transforms.Normalize(
+            [0.5818, 0.5700, 0.5632], 
+            [0.1417, 0.1431, 0.1367]
+        )
+    ]
+
     if args.resize == 1:
         train_transform = transforms.Compose([
             *augmentations,
             transforms.Resize((args.height, args.width)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.5818, 0.5700, 0.5632], 
-                [0.1417, 0.1431, 0.1367]
-            )
+            *tensor_normalize
         ])
         test_transform = transforms.Compose([
             transforms.Resize((args.height, args.width)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.5818, 0.5700, 0.5632], 
-                [0.1417, 0.1431, 0.1367]
-            )
+            *tensor_normalize
         ])
     else:
         train_transform = transforms.Compose([
             *augmentations,
             FixedHeightResize(args.height), 
             FixedWidthPad(args.width),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.5818, 0.5700, 0.5632], 
-                [0.1417, 0.1431, 0.1367]
-            )
+            *tensor_normalize
         ])
         test_transform = transforms.Compose([
             FixedHeightResize(args.height), 
             FixedWidthPad(args.width),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.5818, 0.5700, 0.5632], 
-                [0.1417, 0.1431, 0.1367]
-            )
+            *tensor_normalize
         ])
     
     if args.model_name in ['crnn', 'cnnctc']:
