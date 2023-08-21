@@ -42,6 +42,7 @@ def parse_arguments(argv):
     parser.add_argument('--resize', type=int, default=1)
     parser.add_argument('--height', type=int, default=64)
     parser.add_argument('--width', type=int, default=256)
+    parser.add_argument('--grayscale', type=int, default=0)
 
     # CTC decode hyperparameters
     parser.add_argument('--decode_method', type=str, default='beam_search')
@@ -54,7 +55,6 @@ def parse_arguments(argv):
     parser.add_argument('--label_smoothing', type=float, default=0.0)
 
     return parser.parse_args(argv)
-
 
 
 def initialize_weights(model):

@@ -36,6 +36,11 @@ def get_data(
     pl.seed_everything(seed)
     np.random.seed(seed)
     
+    if args.grayscale:
+        grayscale = transforms.Grayscale(3)
+    else:
+        grayscale = transforms.RandomGrayscale(p=0.2)
+
     augmentations = [
         # Gaussian Noise
         transforms.GaussianBlur(3),
@@ -48,7 +53,7 @@ def get_data(
         # Random Rotation
         transforms.RandomRotation(15),
         # Radom Grayscale
-        transforms.RandomGrayscale(p=0.2),
+        grayscale
     ]
 
     tensor_normalize = [
