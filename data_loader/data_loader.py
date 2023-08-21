@@ -36,14 +36,18 @@ def get_data(
     pl.seed_everything(seed)
     np.random.seed(seed)
     
+    augmentations = [
+        # Gaussian Noise
+        transforms.GaussianBlur(3),
+        # Random Rotation
+        transforms.RandomRotation(15),
+        # Radom Grayscale
+        # transforms.RandomGrayscale(p=0.2),
+    ]
+
     if args.resize == 1:
         train_transform = transforms.Compose([
-            # Gaussian Noise
-            transforms.GaussianBlur(3),
-            # Random Rotation
-            transforms.RandomRotation(15),
-            # Radom Grayscale
-            # transforms.RandomGrayscale(p=0.2),
+            *augmentations,
             transforms.Resize((args.height, args.width)),
             transforms.ToTensor(),
             transforms.Normalize(
@@ -61,12 +65,7 @@ def get_data(
         ])
     else:
         train_transform = transforms.Compose([
-            # Gaussian Noise
-            transforms.GaussianBlur(3),
-            # Random Rotation
-            transforms.RandomRotation(15),
-            # Radom Grayscale
-            # transforms.RandomGrayscale(p=0.2),
+            *augmentations,
             FixedHeightResize(args.height), 
             FixedWidthPad(args.width),
             transforms.ToTensor(),
