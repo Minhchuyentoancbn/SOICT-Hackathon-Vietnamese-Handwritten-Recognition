@@ -7,7 +7,7 @@ import numpy as np
 import math
 from .config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR
 from .dataset import HandWritttenDataset, collate_fn_ctc, HandWrittenDatasetV2, collate_fn
-
+from augment import *
 def get_data(
         batch_size: int = 64,
         seed: int = 42,
