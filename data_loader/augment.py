@@ -30,30 +30,6 @@ def disk(radius, alias_blur=0.1, dtype=np.float32):
 '''
 
 
-class GaussianNoise(object):
-    def __init__(self, rng=None, mag=-1, prob=1., seed=42):
-        super().__init__()
-        self.rng = np.random.default_rng(seed) if rng is None else rng
-        self.mag = mag
-        self.prob = prob
-
-    def __call__(self, img):
-        if self.rng.uniform(0, 1) > self.prob:
-            return img
-
-        # c = self.rng.uniform(.08, .38)
-        b = [.06, 0.09, 0.12]
-        if self.mag < 0 or self.mag >= len(b):
-            index = 0
-        else:
-            index = self.mag
-        a = b[index]
-        c = self.rng.uniform(a, a + 0.03)
-        img = np.asarray(img) / 255.
-        img = np.clip(img + self.rng.normal(size=img.shape, scale=c), 0, 1) * 255
-        return Image.fromarray(img.astype(np.uint8))
-
-
 class DefocusBlur(object):
     def __init__(self, rng=None, mag=-1, prob=1., seed=42):
         super().__init__()
