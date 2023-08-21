@@ -42,7 +42,7 @@ def get_data(
             # Random Rotation
             transforms.RandomRotation(15),
             # Radom Grayscale
-            transforms.RandomGrayscale(p=0.2),
+            # transforms.RandomGrayscale(p=0.2),
             transforms.Resize((args.height, args.width)),
             transforms.ToTensor(),
             transforms.Normalize(
@@ -65,7 +65,7 @@ def get_data(
             # Random Rotation
             transforms.RandomRotation(15),
             # Radom Grayscale
-            transforms.RandomGrayscale(p=0.2),
+            # transforms.RandomGrayscale(p=0.2),
             FixedHeightResize(args.height), 
             FixedWidthPad(args.width),
             transforms.ToTensor(),
