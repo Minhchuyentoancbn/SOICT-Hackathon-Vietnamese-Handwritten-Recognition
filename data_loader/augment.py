@@ -5,6 +5,26 @@ import numpy as np
 import skimage as sk
 from PIL import Image, ImageOps
 from skimage import color
+import torch
+import cv2
+from PIL import Image, ImageOps
+#from wand.image import Image as WandImage
+
+
+def disk(radius, alias_blur=0.1, dtype=np.float32):
+    if radius <= 8:
+        coords = np.arange(-8, 8 + 1)
+        ksize = (3, 3)
+    else:
+        coords = np.arange(-radius, radius + 1)
+        ksize = (5, 5)
+    x, y = np.meshgrid(coords, coords)
+    aliased_disk = np.asarray((x ** 2 + y ** 2) <= radius ** 2, dtype=dtype)
+    aliased_disk /= np.sum(aliased_disk)
+
+    # supersample disk to antialias
+    return cv2.GaussianBlur(aliased_disk, ksize=ksize, sigmaX=alias_blur)
+
 
 '''
     PIL resize (W,H)
@@ -13,20 +33,23 @@ from skimage import color
 '''
 
 
-class GaussianNoise:
-    def __init__(self, rng=None):
+class GaussianNoise(torch.nn.Module):
+    def __init__(self, rng=None, mag=-1, prob=1.):
+        super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
+        self.mag = mag
+        self.prob = prob
 
-    def __call__(self, img, mag=-1, prob=1.):
-        if self.rng.uniform(0, 1) > prob:
+    def forward(self, img):
+        if self.rng.uniform(0, 1) > self.prob:
             return img
 
         # c = self.rng.uniform(.08, .38)
         b = [.06, 0.09, 0.12]
-        if mag < 0 or mag >= len(b):
+        if self.mag < 0 or self.mag >= len(b):
             index = 0
         else:
-            index = mag
+            index = self.mag
         a = b[index]
         c = self.rng.uniform(a, a + 0.03)
         img = np.asarray(img) / 255.
@@ -34,22 +57,25 @@ class GaussianNoise:
         return Image.fromarray(img.astype(np.uint8))
 
 
-class DefocusBlur:
-    def __init__(self, rng=None):
+class DefocusBlur(torch.nn.Module):
+    def __init__(self, rng=None, mag=-1, prob=1.):
+        super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
+        self.mag = mag
+        self.prob = prob
 
-    def __call__(self, img, mag=-1, prob=1.):
-        if self.rng.uniform(0, 1) > prob:
+    def forward(self, img):
+        if self.rng.uniform(0, 1) > self.prob:
             return img
 
         n_channels = len(img.getbands())
         isgray = n_channels == 1
         # c = [(3, 0.1), (4, 0.5), (6, 0.5), (8, 0.5), (10, 0.5)]
         c = [(2, 0.1), (3, 0.1), (4, 0.1)]  # , (6, 0.5)] #prev 2 levels only
-        if mag < 0 or mag >= len(c):
+        if self.mag < 0 or self.mag >= len(c):
             index = self.rng.integers(0, len(c))
         else:
-            index = mag
+            index = self.mag
         c = c[index]
 
         img = np.asarray(img) / 255.
@@ -76,22 +102,25 @@ class DefocusBlur:
         return img
 
 
-class MotionBlur:
-    def __init__(self, rng=None):
+class MotionBlur(torch.nn.Module):
+    def __init__(self, rng=None, mag=-1, prob=1.):
+        super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
+        self.mag = mag
+        self.prob = prob
 
-    def __call__(self, img, mag=-1, prob=1.):
-        if self.rng.uniform(0, 1) > prob:
+    def forward(self, img):
+        if self.rng.uniform(0, 1) > self.prob:
             return img
 
         n_channels = len(img.getbands())
         isgray = n_channels == 1
         # c = [(10, 3), (15, 5), (15, 8), (15, 12), (20, 15)]
         c = [(10, 3), (12, 4), (14, 5)]
-        if mag < 0 or mag >= len(c):
+        if self.mag < 0 or self.mag >= len(c):
             index = self.rng.integers(0, len(c))
         else:
-            index = mag
+            index = self.mag
         c = c[index]
 
         output = BytesIO()
@@ -109,21 +138,24 @@ class MotionBlur:
 
         return img
 
-class Brightness:
-    def __init__(self, rng=None):
+class Brightness(torch.nn.Module):
+    
+    def __init__(self, rng=None, mag=-1, prob=1.):
+        super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
-
-    def __call__(self, img, mag=-1, prob=1.):
-        if self.rng.uniform(0, 1) > prob:
+        self.mag = mag
+        self.prob = prob
+    def forward(self, img):
+        if self.rng.uniform(0, 1) > self.prob:
             return img
 
         # W, H = img.size
         # c = [.1, .2, .3, .4, .5]
         c = [.1, .2, .3]
-        if mag < 0 or mag >= len(c):
+        if self.mag < 0 or self.mag >= len(c):
             index = self.rng.integers(0, len(c))
         else:
-            index = mag
+            index = self.mag
         c = c[index]
 
         n_channels = len(img.getbands())
@@ -155,41 +187,46 @@ class Brightness:
         # return Image.fromarray(img.astype(np.uint8))
 
 
-class JpegCompression:
-    def __init__(self, rng=None):
+class JpegCompression(torch.nn.Module):
+    
+    def __init__(self, rng=None, mag=-1, prob=1.):
+        super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
-
-    def __call__(self, img, mag=-1, prob=1.):
-        if self.rng.uniform(0, 1) > prob:
+        self.mag = mag
+        self.prob = prob
+    def forward(self, img):
+        if self.rng.uniform(0, 1) > self.prob:
             return img
 
         # c = [25, 18, 15, 10, 7]
         c = [25, 18, 15]
-        if mag < 0 or mag >= len(c):
+        if self.mag < 0 or self.mag >= len(c):
             index = self.rng.integers(0, len(c))
         else:
-            index = mag
+            index = self.mag
         c = c[index]
         output = BytesIO()
         img.save(output, 'JPEG', quality=c)
         return Image.open(output)
 
 
-class Pixelate:
-    def __init__(self, rng=None):
+class Pixelate(torch.nn.Module):
+    def __init__(self, rng=None, mag=-1, prob=1.):
+        super().__init__()
         self.rng = np.random.default_rng() if rng is None else rng
-
-    def __call__(self, img, mag=-1, prob=1.):
-        if self.rng.uniform(0, 1) > prob:
+        self.mag = mag
+        self.prob = prob
+    def forward(self, img):
+        if self.rng.uniform(0, 1) > self.prob:
             return img
 
         w, h = img.size
         # c = [0.6, 0.5, 0.4, 0.3, 0.25]
         c = [0.6, 0.5, 0.4]
-        if mag < 0 or mag >= len(c):
+        if self.mag < 0 or self.mag >= len(c):
             index = self.rng.integers(0, len(c))
         else:
-            index = mag
+            index = self.mag
         c = c[index]
         img = img.resize((int(w * c), int(h * c)), Image.BOX)
         return img.resize((w, h), Image.BOX)
