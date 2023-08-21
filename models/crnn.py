@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 
 from .utils import initialize_weights
 from .resnet import ResNet_FeatureExtractor
+from .transformation import TPS_SpatialTransformerNetwork
 
 
 class CRNN(nn.Module):
@@ -14,7 +15,7 @@ class CRNN(nn.Module):
 
     def __init__(self, img_channel, img_height, img_width, num_class,
                  map_to_seq_hidden=64, rnn_hidden=256, leaky_relu=False,
-                 dropout=0.0, feature_extractor='vgg'
+                 dropout=0.0, feature_extractor='vgg', stn_on=False
                  ):
         """
         Arguments:
@@ -46,9 +47,19 @@ class CRNN(nn.Module):
 
         feature_extractor: str (default: 'vgg')
             Name of feature extractor, either 'vgg' or 'resnet'
+
+        stn_on: bool (default: False)
+            Whether to use STN
         """
         
         super(CRNN, self).__init__()
+
+        if stn_on:
+            self.tps = TPS_SpatialTransformerNetwork(
+                20, (img_height, img_width), (img_height, img_width), 3
+            )
+        else:
+            self.tps = nn.Identity()
 
         self.feature_extractor = feature_extractor
 
@@ -77,7 +88,7 @@ class CRNN(nn.Module):
 
     def forward(self, images):
         # shape of images: (batch, channel, height, width)
-
+        images = self.tps(images)
         conv = self.cnn(images)
         if self.drop_out > 0:
             conv = self.dropout1(conv)

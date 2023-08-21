@@ -21,7 +21,7 @@ def ctc(args):
 
     # model
     if args.model_name == 'crnn':
-        model = CRNN(3, args.height, args.width, NUM_CLASSES, dropout=args.dropout, feature_extractor=args.feature_extractor)
+        model = CRNN(3, args.height, args.width, NUM_CLASSES, dropout=args.dropout, feature_extractor=args.feature_extractor, stn_on=args.stn_on)
         if args.feature_extractor == 'vgg':
             model = initilize_parameters(model)
         # model = torch.compile(model)
