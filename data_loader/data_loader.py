@@ -38,8 +38,23 @@ def get_data(
     
     if args.grayscale:
         grayscale = transforms.Grayscale(3)
+        tensor_normalize = [
+            transforms.Grayscale(3),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                [0.5818, 0.5700, 0.5632], 
+                [0.1417, 0.1431, 0.1367]
+            )
+        ]
     else:
         grayscale = transforms.RandomGrayscale(p=0.2)
+        tensor_normalize = [
+            transforms.ToTensor(),
+            transforms.Normalize(
+                [0.5818, 0.5700, 0.5632], 
+                [0.1417, 0.1431, 0.1367]
+            )
+        ]
 
     augmentations = [
         # Gaussian Noise
@@ -56,13 +71,7 @@ def get_data(
         grayscale
     ]
 
-    tensor_normalize = [
-        transforms.ToTensor(),
-        transforms.Normalize(
-            [0.5818, 0.5700, 0.5632], 
-            [0.1417, 0.1431, 0.1367]
-        )
-    ]
+
 
     if args.resize == 1:
         train_transform = transforms.Compose([
