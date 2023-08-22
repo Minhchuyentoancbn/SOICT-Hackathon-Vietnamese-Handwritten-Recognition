@@ -141,7 +141,7 @@ class LightningModel(pl.LightningModule):
         elif args.prediction == 'attention':
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing)
 
-        self.loss_train_avg = Averager()
+        # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
         self.cer_val_avg = Averager()
 
@@ -183,7 +183,7 @@ class LightningModel(pl.LightningModule):
 
 
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
-        self.loss_train_avg.add(loss.item())
+        # self.loss_train_avg.add(loss.item())
 
         # Update weights
         self.manual_backward(loss)
@@ -200,8 +200,8 @@ class LightningModel(pl.LightningModule):
 
 
     def on_train_epoch_end(self):
-        print(f'Training Loss: {self.loss_train_avg.val():.4f}')
-        self.loss_train_avg.reset()
+        # print(f'Training Loss: {self.loss_train_avg.val():.4f}')
+        # self.loss_train_avg.reset()
         self.epoch_num += 1
 
 
