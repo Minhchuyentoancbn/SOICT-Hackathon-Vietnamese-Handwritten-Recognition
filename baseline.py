@@ -167,7 +167,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels = batch
         batch_size = images.size(0)
-        text, length = self.converter.encode(labels, batch_max_length=self.max_len)
+        text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
         self.model.train()
