@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from augmentation.geometry import Shrink
+# from augmentation.geometry import Shrink
 from augmentation.blur import GaussianBlur, MotionBlur
 from augmentation.camera import Brightness, JpegCompression
 from augmentation.process import Equalize, AutoContrast, Sharpness, Color
@@ -204,9 +204,9 @@ class DataAugment(object):
             self.process = [Equalize(), AutoContrast(), Sharpness(), Color()]
             self.camera = [Brightness(), JpegCompression()]
             self.blur = [GaussianBlur(),  MotionBlur()]
-            self.geometry = [Shrink()]
+            # self.geometry = [Shrink()]
 
-            self.augs = [self.process, self.camera, self.blur, self.geometry]
+            self.augs = [self.process, self.camera, self.blur]
 
 
     def __call__(self, img):
@@ -220,8 +220,9 @@ class DataAugment(object):
 
 
     def rand_aug(self, img):
-        augs = np.random.choice(self.augs, self.augs_num, replace=False)
-        for aug in augs:
+        aug_idx = np.random.choice(np.arange(len(self.augs)), self.augs_num, replace=False)
+        for idx in aug_idx:
+            aug = self.augs[idx]
             index = np.random.randint(0, len(aug))
             op = aug[index]
             mag = np.random.randint(0, 3) if self.augs_mag is None else self.augs_mag
