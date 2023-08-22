@@ -13,3 +13,4 @@ checkpoints/*/
 augmentation/frost/
 augmentation/images/
 
+predictions/*.txt
