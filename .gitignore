@@ -14,3 +14,4 @@ augmentation/frost/
 augmentation/images/
 
 predictions/*.txt
+scripts/*.sh
