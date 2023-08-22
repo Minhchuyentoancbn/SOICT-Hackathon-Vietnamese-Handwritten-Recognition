@@ -52,14 +52,15 @@ def get_data(
     augmentations = [
         # Gaussian Noise
         transforms.GaussianBlur(3),
-        # Defocus Blur
-        DefocusBlur(seed=seed, prob=0.1),
+        # # Defocus Blur
+        # DefocusBlur(seed=seed, prob=0.1),
+        MotionBlur(seed=seed, prob=0.1),
         # Bright ness
-        transforms.ColorJitter(brightness=0.1),
+        transforms.ColorJitter(brightness=0.2),
         # Camera
-        JpegCompression(seed=seed, prob=0.1),
+        JpegCompression(seed=seed, prob=0.2),
         # Random Rotation
-        transforms.RandomRotation(15),
+        transforms.RandomRotation(15, fill=145),
         # Radom Grayscale
         grayscale
     ]
@@ -68,7 +69,8 @@ def get_data(
         train_transform = transforms.Compose([
             *augmentations,
             transforms.Resize((args.height, args.width)),
-            *tensor_normalize
+            *tensor_normalize,
+            transforms.RandomErasing(p=1.0, scale=(0.01, 0.02)),
         ])
         if args.grayscale:
             test_transform = transforms.Compose([
@@ -86,7 +88,8 @@ def get_data(
             *augmentations,
             FixedHeightResize(args.height), 
             FixedWidthPad(args.width),
-            *tensor_normalize
+            *tensor_normalize,
+            transforms.RandomErasing(p=1.0, scale=(0.01, 0.02), value=0),
         ])
         if args.grayscale:
             test_transform = transforms.Compose([
