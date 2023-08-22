@@ -252,7 +252,7 @@ def parse_arguments(argv):
     # Data processing
     parser.add_argument('--train', type=int, default=1, help='Whether to use all training data or not, default: 1 (not use all training data)')
     parser.add_argument('--num_samples', type=int, default=0, help='Number of samples to train on, default: 0 (all samples)')
-    parser.add_argument('--keep_ratio_with_pad', type=int, default=1, help='Whether to keep ratio for image resize, default: 1 (keep ratio)')
+    parser.add_argument('--keep_ratio_with_pad', type=int, default=0, help='Whether to keep ratio for image resize, default: 0 (keep ratio)')
     parser.add_argument('--height', type=int, default=32, help='Height of the input image, default: 32')
     parser.add_argument('--width', type=int, default=128, help='Width of the input image, default: 128')
     parser.add_argument('--grayscale', type=int, default=0, help='Convert image to grayscale which then has 1 channel, default: 0')
