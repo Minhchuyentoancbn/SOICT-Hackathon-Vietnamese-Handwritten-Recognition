@@ -152,7 +152,8 @@ class LightningModel(pl.LightningModule):
         if args.num_samples > 0:
             dset_size = args.num_samples
 
-        assert args.epochs > args.decay_epochs, 'Number of epochs must be greater than number of decay epochs'
+        if args.scheduler:
+            assert args.epochs >= args.decay_epochs, 'Number of epochs must be greater than number of decay epochs'
         num_iter = dset_size // args.batch_size * (args.epochs - args.decay_epochs)
         self.num_iter = num_iter
         self.automatic_optimization = False
