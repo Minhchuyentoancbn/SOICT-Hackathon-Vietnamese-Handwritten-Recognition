@@ -52,8 +52,7 @@ def get_data(
     augmentations = [
         # Gaussian Noise
         transforms.GaussianBlur(3),
-        # # Defocus Blur
-        # DefocusBlur(seed=seed, prob=0.1),
+        # Motion Blur
         MotionBlur(seed=seed, prob=0.1),
         # Bright ness
         transforms.ColorJitter(brightness=0.2),
