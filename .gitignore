@@ -1,0 +1,15 @@
+*.pdf
+*.zip
+
+playground.ipynb
+error_analysis.ipynb
+submission.ipynb
+
+*__pycache__*
+
+data/new_*
+saved_models/*.pt
+checkpoints/*/
+augmentation/frost/
+augmentation/images/
+
