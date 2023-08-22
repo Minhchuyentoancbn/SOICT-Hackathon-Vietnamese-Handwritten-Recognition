@@ -152,10 +152,11 @@ class LightningModel(pl.LightningModule):
         if args.num_samples > 0:
             dset_size = args.num_samples
 
-        num_iter = dset_size // args.batch_size * args.epochs
+        assert args.epochs > args.decay_epochs, 'Number of epochs must be greater than number of decay epochs'
+        num_iter = dset_size // args.batch_size * (args.epochs - args.decay_epochs)
         self.num_iter = num_iter
-    
         self.automatic_optimization = False
+        self.epoch_num = 0
 
     
     def training_step(self, batch, batch_idx):
@@ -192,7 +193,7 @@ class LightningModel(pl.LightningModule):
 
         # Update learning rate
         scheduler = self.lr_schedulers()
-        if scheduler is not None:
+        if scheduler is not None and self.epoch_num >= self.args.decay_epochs:
             scheduler.step()
         # Log learning rate
         self.log('lr', opt.param_groups[0]['lr'], prog_bar=True)
@@ -201,6 +202,7 @@ class LightningModel(pl.LightningModule):
     def on_train_epoch_end(self):
         print(f'Training Loss: {self.loss_train_avg.val():.4f}')
         self.loss_train_avg.reset()
+        self.epoch_num += 1
 
 
     def validation_step(self, batch, batch_idx):

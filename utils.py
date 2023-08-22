@@ -247,6 +247,7 @@ def parse_arguments(argv):
 
     # Learning rate scheduler
     parser.add_argument('--scheduler', type=int, default=0, help='Whether to use learning rate scheduler or not, default: 0 (not use scheduler)')
+    parser.add_argument('--decay_epochs', type=int, default=0, help='Decay learning rate after this number of epochs, default: 0')
 
     # Data processing
     parser.add_argument('--train', type=int, default=1, help='Whether to use all training data or not, default: 1 (not use all training data)')
