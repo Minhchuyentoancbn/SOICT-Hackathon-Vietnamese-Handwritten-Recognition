@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict, Optional, Union
 from urllib.parse import urlsplit
 
-from timm.layers import set_layer_config
+from .layers import set_layer_config
 from ._helpers import load_checkpoint
 from ._hub import load_model_config_from_hf
 from ._pretrained import PretrainedCfg

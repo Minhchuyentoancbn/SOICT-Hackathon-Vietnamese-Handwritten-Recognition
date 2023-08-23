@@ -27,8 +27,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import Literal
 
-from timm import __version__
-from timm.models._pretrained import filter_pretrained_cfg
+from .version import __version__
+from ._pretrained import filter_pretrained_cfg
 
 try:
     from huggingface_hub import (
