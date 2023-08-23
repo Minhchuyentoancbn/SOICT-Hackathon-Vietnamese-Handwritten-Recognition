@@ -78,7 +78,7 @@ class ResizeNormalize(object):
     """
     Resize image to a fixed size, covert to torch.Tensor and normalize.
     """
-    def __init__(self, size, interpolation=Image.BICUBIC):
+    def __init__(self, size, interpolation=Image.BICUBIC, scale=True):
         """
         Arguments:
         ----------
@@ -87,15 +87,20 @@ class ResizeNormalize(object):
 
         interpolation: int
             Interpolation method.
+
+        scale: bool
+            Whether to scale the image or not.
         """
         self.size = size
         self.interpolation = interpolation
         self.toTensor = transforms.ToTensor()
+        self.scale = scale
 
     def __call__(self, img):
         img = img.resize(self.size, self.interpolation)
         img = self.toTensor(img)
-        img.sub_(0.5).div_(0.5)
+        if self.scale:
+            img.sub_(0.5).div_(0.5)
         return img
 
 
@@ -103,7 +108,7 @@ class NormalizePAD(object):
     """
     Convert image to torch.Tensor and normalize. Pad the width if needed.
     """
-    def __init__(self, max_size):
+    def __init__(self, max_size, scale=True):
         """
         Arguments:
         ----------
@@ -113,10 +118,12 @@ class NormalizePAD(object):
         self.toTensor = transforms.ToTensor()
         self.max_size = max_size
         self.max_width_half = math.floor(max_size[2] / 2)
+        self.scale = scale
 
     def __call__(self, img):
         img = self.toTensor(img)
-        img.sub_(0.5).div_(0.5)
+        if self.scale:
+            img.sub_(0.5).div_(0.5)
         c, h, w = img.size()
         Pad_img = torch.FloatTensor(*self.max_size).fill_(0)
         Pad_img[:, :, :w] = img  # right pad
@@ -131,7 +138,7 @@ class Align(object):
     Resize image to a fixed size, and pad the width if needed.
     Convert image to torch.Tensor and normalize.
     """
-    def __init__(self, imgC=3, imgH=32, imgW=128, keep_ratio_with_pad=False):
+    def __init__(self, imgC=3, imgH=32, imgW=128, keep_ratio_with_pad=False, transformer=False):
         """
         Arguments:
         ----------
@@ -146,18 +153,25 @@ class Align(object):
 
         keep_ratio_with_pad: bool
             Whether to keep the ratio of the image or not.
+
+        transform: bool
+            Whether to use transformer or not.
         """
         self.imgC = imgC
         self.imgH = imgH
         self.imgW = imgW
         self.keep_ratio_with_pad = keep_ratio_with_pad
+        if transformer:
+            self.scale = False
+        else:
+            self.scale = True
 
 
     def __call__(self, img):
         if self.keep_ratio_with_pad:  # same concept with 'Rosetta' paper
             resized_max_w = self.imgW
             input_channel = self.imgC
-            transform = NormalizePAD((input_channel, self.imgH, resized_max_w))
+            transform = NormalizePAD((input_channel, self.imgH, resized_max_w), self.scale)
 
             w, h = img.size
             ratio = w / float(h)
@@ -169,7 +183,7 @@ class Align(object):
             resized_image = img.resize((resized_w, self.imgH), Image.BICUBIC)
             resized_image = transform(resized_image)
         else:
-            transform = ResizeNormalize((self.imgW, self.imgH))
+            transform = ResizeNormalize((self.imgW, self.imgH), self.scale)
             resized_image = transform(img)
     
         return resized_image

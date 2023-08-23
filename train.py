@@ -42,10 +42,10 @@ def get_data(
     data_augment = DataAugment(prob=0.2)
     if args.grayscale:
         grayscale = transforms.Grayscale()
-        align = Align(1, args.height, args.width, args.keep_ratio_with_pad)  # 1 channel for grayscale
+        align = Align(1, args.height, args.width, args.keep_ratio_with_pad, args.transformer)  # 1 channel for grayscale
     else:
         grayscale = transforms.Compose([])  # Do nothing
-        align = Align(3, args.height, args.width, args.keep_ratio_with_pad)
+        align = Align(3, args.height, args.width, args.keep_ratio_with_pad, args.transformer)
     
     train_transform = transforms.Compose([
         data_augment,
