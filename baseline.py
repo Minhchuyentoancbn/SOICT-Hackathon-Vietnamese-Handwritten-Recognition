@@ -9,6 +9,7 @@ from models.transformation import TPS_SpatialTransformerNetwork
 from models.feature_extraction import ResNet_FeatureExtractor, VGG_FeatureExtractor
 from models.sequence_modeling import BidirectionalLSTM
 from models.prediction import Attention
+from models.vitstr import create_vitstr
 from utils import Averager
 
 
@@ -19,7 +20,9 @@ class Model(nn.Module):
 
     def __init__(self, img_channel, img_height, img_width, num_class,
                  stn_on=False, feature_extractor='resnet', 
-                 prediction='ctc', max_len=25, dropout=0.0):
+                 prediction='ctc', max_len=25, dropout=0.0,
+                 transformer=0, transformer_model='vitstr_tiny_patch16_224'
+                 ):
         """
         Arguments:
         ----------
@@ -49,6 +52,12 @@ class Model(nn.Module):
 
         dropout: float
             Dropout value
+
+        transformer: int
+            Whether to use ViTSTR, default is 0 (no ViTSTR)
+
+        transformer_model: str
+            ViTSTR model to use, default is 'vitstr_tiny_patch16_224'
         """
         super(Model, self).__init__()
         self.predict_method = prediction
@@ -60,6 +69,11 @@ class Model(nn.Module):
             )
         else:
             self.tps = nn.Identity()
+
+        self.transformer = transformer
+        if transformer:
+            self.vitstr = create_vitstr(num_class, model=transformer_model)
+            return
 
         if feature_extractor == 'resnet':
             self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
@@ -94,6 +108,10 @@ class Model(nn.Module):
         # shape of images: (B, C, H, W)
         # Transformation
         images = self.tps(images)
+
+        if self.transformer:
+            prediction = self.vitstr(images, self.max_len)
+            return prediction
 
         # Feature extraction
         visual_feature = self.feature_extractor(images)
@@ -138,7 +156,7 @@ class LightningModel(pl.LightningModule):
         
         if args.prediction == 'ctc':
             self.criterion = nn.CTCLoss(zero_infinity=True)
-        elif args.prediction == 'attention':
+        else:
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing)
 
         # self.loss_train_avg = Averager()
@@ -159,6 +177,13 @@ class LightningModel(pl.LightningModule):
         self.automatic_optimization = False
         self.epoch_num = 0
 
+        if args.transformer:
+            # filter that only require gradient decent
+            filtered_parameters = []
+            for p in filter(lambda p: p.requires_grad, self.model.parameters()):
+                filtered_parameters.append(p)
+            self.filtered_parameters = filtered_parameters
+
     
     def training_step(self, batch, batch_idx):
         # Get the optimizer
@@ -168,11 +193,16 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels = batch
         batch_size = images.size(0)
-        text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
+        if not self.args.transformer:
+            text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
         self.model.train()
-        if self.args.prediction == 'ctc':
+        if self.args.transformer:
+            target = self.converter.encode(labels, batch_max_length=self.args.max_len)
+            preds = self.model(images, text=target, seqlen=self.converter.batch_max_length)
+            loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
+        elif self.args.prediction == 'ctc':
             preds = self.model(images, text)
             preds_size = torch.IntTensor([preds.size(1)] * batch_size)
             preds = preds.log_softmax(2).permute(1, 0, 2) # (B, T, C) -> (T, B, C)
@@ -210,13 +240,24 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels = batch
         batch_size = images.size(0)
-        length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
-        text_for_pred = torch.LongTensor(batch_size, self.args.max_len + 1).fill_(0)
-        text_for_loss, length_for_loss = self.converter.encode(labels, batch_max_length=self.args.max_len)
+        if self.args.transformer:
+            target = self.converter.encode(labels, batch_max_length=self.args.max_len)
+        else:
+            length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
+            text_for_pred = torch.LongTensor(batch_size, self.args.max_len + 1).fill_(0)
+            text_for_loss, length_for_loss = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
         self.model.eval()
-        if self.args.prediction == 'ctc':
+        if self.args.transformer:
+            preds = self.model(images, text=target, seqlen=self.converter.batch_max_length)
+            _, preds_index = preds.topk(1, dim=-1, largest=True, sorted=True)
+            preds_index = preds_index.view(-1, self.converter.batch_max_length)
+
+            val_loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
+            length_for_pred = torch.IntTensor([self.converter.batch_max_length - 1] * batch_size)
+            preds_str = self.converter.decode(preds_index[:, 1:], length_for_pred)
+        elif self.args.prediction == 'ctc':
             preds = self.model(images, text_for_pred)
             pred_size = torch.IntTensor([preds.size(1)] * batch_size)
             val_loss = self.criterion(preds.log_softmax(2).permute(1, 0, 2), text_for_loss, pred_size, length_for_loss)
@@ -237,7 +278,10 @@ class LightningModel(pl.LightningModule):
         # Compute CER
         total_cer = 0
         for gt, pred in zip(labels, preds_str):
-            if self.args.prediction == 'attention':
+            if self.args.transformer:
+                pred_EOS = pred.find('[s]')
+                pred = pred[:pred_EOS]
+            elif self.args.prediction == 'attention':
                 pred_EOS = pred.find('[s]')
                 gt = gt[:gt.find('[s]')]
                 pred = pred[:pred_EOS]
@@ -260,21 +304,26 @@ class LightningModel(pl.LightningModule):
             'weight_decay': self.args.weight_decay
         }
 
+        if self.args.transformer:
+            params = self.filtered_parameters
+        else:
+            params = self.parameters()
+
         if self.args.optim == 'adam':
             optimizer = torch.optim.Adam(
-                self.parameters(), betas=(self.args.momentum, 0.999), **optimizer_params
+                params, betas=(self.args.momentum, 0.999), **optimizer_params
             )
         elif self.args.optim == 'sgd':
             optimizer = torch.optim.SGD(
-                self.parameters(), momentum=self.args.momentum, **optimizer_params
+                params, momentum=self.args.momentum, **optimizer_params
             )
         elif self.args.optim == 'adamw':
             optimizer = torch.optim.AdamW(
-                self.parameters(), betas=(self.args.momentum, 0.999), **optimizer_params
+                params, betas=(self.args.momentum, 0.999), **optimizer_params
             )
         elif self.args.optim == 'adadelta':
             optimizer = torch.optim.Adadelta(
-                self.parameters(), **optimizer_params, eps=1e-8, rho=0.95
+                params, **optimizer_params, eps=1e-8, rho=0.95
             )
 
         # Learning rate scheduler

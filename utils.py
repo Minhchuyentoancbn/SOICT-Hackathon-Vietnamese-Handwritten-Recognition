@@ -133,7 +133,7 @@ class AttnLabelConverter(object):
 class TokenLabelConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self):
+    def __init__(self, max_len=25):
         # character (str): set of the possible characters.
         # [GO] for the start token of the attention decoder. [s] for end-of-sentence token.
         character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
@@ -145,6 +145,8 @@ class TokenLabelConverter(object):
         self.num_classes = len(self.character)
 
         self.dict = {word: i for i, word in enumerate(self.character)}
+        self.batch_max_length = max_len + len(self.list_token)  # +2 for [GO] and [s] at end of sentence.
+
 
     def encode(self, text, batch_max_length=25):
         """ 
