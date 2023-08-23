@@ -1,3 +1,17 @@
+'''
+Implementation of ViTSTR based on timm VisionTransformer.
+
+TODO: 
+1) distilled deit backbone
+2) base deit backbone
+
+Copyright 2021 Rowel Atienza
+'''
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import torch 
 import torch.nn as nn
 import logging
@@ -5,9 +19,9 @@ import torch.utils.model_zoo as model_zoo
 
 from copy import deepcopy
 from functools import partial
-from .vit.vision_transformer import VisionTransformer, _cfg
-from .vit._registry import register_model
-from .vit._factory import create_model
+from timm.models.vision_transformer import VisionTransformer, _cfg
+from timm.models.registry import register_model
+from timm.models import create_model
 
 _logger = logging.getLogger(__name__)
 
@@ -31,7 +45,6 @@ def create_vitstr(num_tokens, model=None, checkpoint_path=''):
     vitstr.reset_classifier(num_classes=num_tokens)
 
     return vitstr
-
 
 class ViTSTR(VisionTransformer):
     '''
