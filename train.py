@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR
-from utils import AttnLabelConverter, CTCLabelConverter, make_submission
+from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, make_submission
 from baseline import Model, LightningModel
 from test import predict
 
@@ -126,7 +126,9 @@ def train(args):
     train_loader, val_loader, test_loader, train_set, val_set, test_set = get_data(args.batch_size, args.seed, args)
 
     # Get the converter
-    if args.prediction == 'ctc':
+    if args.transformer:
+        converter = TokenLabelConverter(args.max_len)
+    elif args.prediction == 'ctc':
         converter = CTCLabelConverter()
     elif args.prediction == 'attention':
         converter = AttnLabelConverter()
@@ -141,7 +143,8 @@ def train(args):
     model = Model(
         input_channel, args.height, args.width, NUM_CLASSES,
         args.stn_on, args.feature_extractor, args.prediction,
-        dropout=args.dropout, max_len=args.max_len
+        dropout=args.dropout, max_len=args.max_len, 
+        transformer=args.transformer, transformer_model=args.transformer_model,
     )
     pl_model = LightningModel(model, converter, args)
 
@@ -160,7 +163,7 @@ def train(args):
     print('-' * 50)
 
     # Make submission
-    preds, img_names, confidences = predict(pl_model.model, test_loader, converter, args.prediction, args.max_len)
+    preds, img_names, confidences = predict(pl_model.model, test_loader, converter, args.prediction, args.max_len, args.transformer)
     make_submission(preds, img_names, args.model_name)
 
     # Save the confidence for later ensemble
