@@ -142,6 +142,7 @@ class TokenLabelConverter(object):
 
         self.list_token = [self.GO, self.SPACE]
         self.character = self.list_token + list(character)
+        self.num_classes = len(self.character)
 
         self.dict = {word: i for i, word in enumerate(self.character)}
 
