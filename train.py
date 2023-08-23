@@ -48,6 +48,8 @@ def get_data(
         align = Align(3, args.height, args.width, args.keep_ratio_with_pad, args.transformer)
     
     train_transform = transforms.Compose([
+        # Random Rotation
+        transforms.RandomRotation(20),
         data_augment,
         grayscale,
         align
