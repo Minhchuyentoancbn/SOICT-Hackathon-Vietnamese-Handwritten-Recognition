@@ -188,8 +188,9 @@ class LightningModel(pl.LightningModule):
                 filtered_parameters.append(p)
             self.filtered_parameters = filtered_parameters
 
-        # Save hyperparameters
-        self.save_hyperparameters()
+        if args.save:
+            # Save hyperparameters
+            self.save_hyperparameters()
 
     
     def training_step(self, batch, batch_idx):

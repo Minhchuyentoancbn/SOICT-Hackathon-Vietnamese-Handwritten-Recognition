@@ -12,6 +12,7 @@ def parse_arguments(argv):
     parser.add_argument('--seed', type=int, default=42, help='Random seed, default: 42')
     parser.add_argument('--val_check_interval', type=float, default=0.5, help='Validation check interval per epoch, default: 0.5')
     parser.add_argument('--model_name', type=str, help='Name of the model to train')
+    parser.add_argument('--save', type=int, default=0, help='Whether to save for training later or not, default: 0 (not save)')
 
     # Optimization hyperparameters
     parser.add_argument('--epochs', type=int, default=5, help='Number of epochs, default: 5')
