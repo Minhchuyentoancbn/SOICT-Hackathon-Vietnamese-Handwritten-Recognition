@@ -104,13 +104,15 @@ class Model(nn.Module):
         initialize_weights(self.prediction)
 
 
-    def forward(self, images, text, is_train=True):
+    def forward(self, images, text, is_train=True, seqlen=None):
         # shape of images: (B, C, H, W)
         # Transformation
-        images = self.tps(images)
+        if seqlen is None:
+            seqlen = self.max_len
 
+        images = self.tps(images)
         if self.transformer:
-            prediction = self.vitstr(images, self.max_len)
+            prediction = self.vitstr(images, seqlen=seqlen)
             return prediction
 
         # Feature extraction
@@ -126,7 +128,7 @@ class Model(nn.Module):
         if self.predict_method == 'ctc':
             prediction = self.prediction(contextual_feature.contiguous())
         else:
-            prediction = self.prediction(contextual_feature.contiguous(), text, is_train, self.max_len)
+            prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
 
         return prediction
     

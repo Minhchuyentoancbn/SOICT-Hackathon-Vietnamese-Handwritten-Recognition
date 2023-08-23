@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from utils import get_device
 
 
-def predict(model, dataloader, coverter, prediction, max_length=25):
+def predict(model, dataloader, converter, prediction, max_length=25, transformer=0):
     """
     Predict the result of the model
 
@@ -16,7 +16,7 @@ def predict(model, dataloader, coverter, prediction, max_length=25):
     dataloader: torch.utils.data.DataLoader
         The dataloader of the dataset
 
-    coverter: AttnLabelConverter
+    converter: AttnLabelConverter
         The converter used to convert the label to character
 
     prediction: str
@@ -24,6 +24,9 @@ def predict(model, dataloader, coverter, prediction, max_length=25):
 
     max_length: int
         The maximum length of the sequence
+
+    transformer: int
+        Whether to use transformer
 
     Returns:
     --------
@@ -50,19 +53,26 @@ def predict(model, dataloader, coverter, prediction, max_length=25):
             # Prepare data
             batch_size = data.size(0)
             images = data.to(device)
-            length_for_pred = torch.IntTensor([max_length] * batch_size).to(device)
-            text_for_pred = torch.LongTensor(batch_size, max_length + 1).fill_(0).to(device)
+            if not transformer:
+                length_for_pred = torch.IntTensor([max_length] * batch_size).to(device)
+                text_for_pred = torch.LongTensor(batch_size, max_length + 1).fill_(0).to(device)
 
             # Predict
-            if prediction == 'ctc':
+            if transformer:
+                preds = model(images, seqlen=converter.batch_max_length, text=None)
+                _, preds_index = preds.topk(1, dim=-1, largest=True, sorted=True)
+                preds_index = preds_index.view(-1, converter.batch_max_length)
+                length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
+                preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
+            elif prediction == 'ctc':
                 preds = model(images, text_for_pred)
                 preds_size = torch.IntTensor([preds.size(1)] * batch_size)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
-                preds_str = coverter.decode(preds_index, preds_size)
+                preds_str = converter.decode(preds_index, preds_size)
             else:
                 preds = model(images, text_for_pred, is_train=False)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
-                preds_str = coverter.decode(preds_index, length_for_pred)
+                preds_str = converter.decode(preds_index, length_for_pred)
 
             all_preds += preds_str
             img_names_lst += list(img_names)
@@ -72,7 +82,7 @@ def predict(model, dataloader, coverter, prediction, max_length=25):
             preds_max_prob, _ = preds_prob.max(dim=2)
 
             for pred, pred_max_prob in zip(preds_str, preds_max_prob):
-                if prediction == 'attention':
+                if transformer or prediction == 'attention':        
                     pred_EOS = pred.find('[s]')
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
                     pred_max_prob = pred_max_prob[:pred_EOS]
