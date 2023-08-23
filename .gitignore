@@ -15,3 +15,6 @@ augmentation/images/
 
 predictions/*.txt
 scripts/*.sh
+
+models/timm/
+deep-text-recognition-benchmark/
