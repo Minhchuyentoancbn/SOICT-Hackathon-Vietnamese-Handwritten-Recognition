@@ -354,7 +354,7 @@ class LightningModel(pl.LightningModule):
         # Learning rate scheduler
         if self.args.scheduler:
             scheduler = optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=self.num_iter, eta_min=1e-6
+                optimizer, T_max=self.num_iter
             )
             return [optimizer, ], [scheduler, ]
 
