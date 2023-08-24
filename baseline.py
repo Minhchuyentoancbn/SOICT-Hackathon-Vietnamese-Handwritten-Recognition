@@ -167,10 +167,11 @@ class LightningModel(pl.LightningModule):
         else:
             reduction = 'mean'
 
-        if args.prediction == 'ctc':
-            self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
-        else:
+        if args.transformer or args.prediction == 'attention':
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing, reduction=reduction)
+        else:
+            self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
+           
 
         # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
