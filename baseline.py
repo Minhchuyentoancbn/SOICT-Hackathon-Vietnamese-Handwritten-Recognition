@@ -88,7 +88,7 @@ class Model(nn.Module):
             output_channel = 2208
         else:
             output_channel = 512
-            
+
         self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
         self.sequence_modeling = nn.Sequential(
             BidirectionalLSTM(output_channel, 256, 256),
@@ -164,10 +164,13 @@ class LightningModel(pl.LightningModule):
         self.args = args
         self.cer = CharErrorRate()
         
+        if args.focal_loss:
+            reduction = 'none'
+
         if args.prediction == 'ctc':
-            self.criterion = nn.CTCLoss(zero_infinity=True)
+            self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
         else:
-            self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing)
+            self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing, reduction=reduction)
 
         # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
@@ -226,6 +229,9 @@ class LightningModel(pl.LightningModule):
             targets = text[:, 1:] # without [GO] Symbol
             loss = self.criterion(preds.view(-1, preds.shape[-1]), targets.contiguous().view(-1))
 
+        if self.args.focal_loss:
+            p = torch.exp(-loss)
+            loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * loss).mean()
 
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
         # self.loss_train_avg.add(loss.item())
@@ -285,6 +291,10 @@ class LightningModel(pl.LightningModule):
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
             labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
+
+        if self.args.focal_loss:
+            p = torch.exp(-val_loss)
+            val_loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * val_loss).mean()
 
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
         self.loss_val_avg.add(val_loss.item())

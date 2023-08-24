@@ -23,6 +23,9 @@ def parse_arguments(argv):
     parser.add_argument('--weight_decay', type=float, default=0.0, help='Weight decay, default: 0.0')
     parser.add_argument('--dropout', type=float, default=0.0, help='Dropout after image feature extractor, default: 0.0')
     parser.add_argument('--label_smoothing', type=float, default=0.0, help='Label smoothing for CrossEntropyLoss, default: 0.0')
+    parser.add_argument('--focal_loss', type=int, default=0, help='Whether to use focal loss or not, default: 0 (not use focal loss)')
+    parser.add_argument('--focal_loss_gamma', type=float, default=2.0, help='Gamma for focal loss, default: 2.0')
+    parser.add_argument('--focal_loss_alpha', type=float, default=0.5, help='Alpha for focal loss, default: 0.5')
 
     # Learning rate scheduler
     parser.add_argument('--scheduler', type=int, default=0, help='Whether to use learning rate scheduler or not, default: 0 (not use scheduler)')
