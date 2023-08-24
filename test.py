@@ -74,7 +74,6 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, length_for_pred)
 
-            all_preds += preds_str
             img_names_lst += list(img_names)
 
             # Compute confidence score
@@ -87,6 +86,7 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
                     pred_max_prob = pred_max_prob[:pred_EOS]
                     
+                all_preds.append(pred)
                 confidence_score = pred_max_prob.cumprod(dim=0)[-1]
                 confidences.append(confidence_score.item())
 
