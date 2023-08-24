@@ -6,7 +6,7 @@ from torchmetrics.text import CharErrorRate
 from torch.nn import init
 
 from models.transformation import TPS_SpatialTransformerNetwork
-from models.feature_extraction import ResNet_FeatureExtractor, VGG_FeatureExtractor, ResNet_ASTER_FeatureExtractor, DenseNet_FeatureExtractor
+from models.feature_extraction import ResNet_FeatureExtractor, VGG_FeatureExtractor, DenseNet_FeatureExtractor
 from models.sequence_modeling import BidirectionalLSTM
 from models.prediction import Attention
 from models.vitstr import create_vitstr
@@ -79,8 +79,6 @@ class Model(nn.Module):
             self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
         elif feature_extractor == 'vgg':
             self.feature_extractor = VGG_FeatureExtractor(img_channel, 512)
-        elif feature_extractor == 'resnet_aster':
-            self.feature_extractor = ResNet_ASTER_FeatureExtractor(img_channel, 512)
         elif feature_extractor == 'densenet':
             self.feature_extractor = DenseNet_FeatureExtractor(img_channel)
         
