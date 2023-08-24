@@ -164,6 +164,8 @@ class LightningModel(pl.LightningModule):
         
         if args.focal_loss:
             reduction = 'none'
+        else:
+            reduction = 'mean'
 
         if args.prediction == 'ctc':
             self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
