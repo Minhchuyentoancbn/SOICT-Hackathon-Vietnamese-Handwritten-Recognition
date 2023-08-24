@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from collections import OrderedDict
+from torchvision.models.densenet import _DenseBlock
+
 
 class VGG_FeatureExtractor(nn.Module):
     """ FeatureExtractor of CRNN (https://arxiv.org/pdf/1507.05717.pdf) """
@@ -364,3 +367,88 @@ class ResNet_ASTER(nn.Module):
         return x
     
 
+class DenseNet_FeatureExtractor(nn.Module):
+    def __init__(self, input_channel):
+        super(DenseNet_FeatureExtractor, self).__init__()
+        self.ConvNet = DenseNet(input_channel)
+
+    def forward(self, input):
+        return self.ConvNet(input)
+
+class DenseNet(nn.Module):
+    __constants__ = ['features']
+
+    def __init__(self, input_channel, growth_rate=48, block_config=(6, 12, 36, 24),
+                 num_init_features=96, bn_size=4, drop_rate=0.1, memory_efficient=False):
+
+        super(DenseNet, self).__init__()
+
+        # First convolution
+        self.features = nn.Sequential(OrderedDict([
+            ('conv0', nn.Conv2d(input_channel, num_init_features, kernel_size=7, stride=(2, 2),
+                                padding=3, bias=False)),
+            ('norm0', nn.BatchNorm2d(num_init_features)),
+            ('relu0', nn.ReLU(inplace=True)),
+            ('pool0', nn.MaxPool2d(kernel_size=2, stride=(2, 1), padding=0)),
+        ]))
+
+        # Each denseblock
+        num_features = num_init_features
+        for i, num_layers in enumerate(block_config):
+            block = _DenseBlock(
+                num_layers=num_layers,
+                num_input_features=num_features,
+                bn_size=bn_size,
+                growth_rate=growth_rate,
+                drop_rate=drop_rate,
+                memory_efficient=memory_efficient
+            )
+            self.features.add_module('denseblock%d' % (i + 1), block)
+            num_features = num_features + num_layers * growth_rate
+            if i != len(block_config) - 1:
+                if i % 2 == 0:
+                    trans = Transition22(num_input_features=num_features,
+                                        num_output_features=num_features // 2)
+                elif i % 2 == 1:
+                    trans = Transition21(num_input_features=num_features,
+                                        num_output_features=num_features // 2)
+                self.features.add_module('transition%d' % (i + 1), trans)
+                num_features = num_features // 2
+
+        # Final batch norm
+        self.features.add_module('norm5', nn.BatchNorm2d(num_features))
+
+        # TimeDistributed
+        # self.timedistributed = TimeDistributed(nn.Linear(num_features, num_classes, bias=True), batch_first=False)
+
+
+    def forward(self, x):
+        features = self.features(x)
+        out = F.relu(features, inplace=True)
+        return out
+
+
+class Transition22(nn.Sequential):
+    def __init__(self, num_input_features, num_output_features):
+        super(Transition22, self).__init__()
+        self.add_module('norm', nn.BatchNorm2d(num_input_features))
+        self.add_module('relu', nn.ReLU(inplace=True))
+        self.add_module('conv', nn.Conv2d(num_input_features, num_output_features,
+                                          kernel_size=1, stride=1, bias=False))
+        self.add_module('pool', nn.AvgPool2d(kernel_size=2, stride=2))
+
+
+class Transition21(nn.Sequential):
+    def __init__(self, num_input_features, num_output_features):
+        super(Transition21, self).__init__()
+        self.add_module('norm', nn.BatchNorm2d(num_input_features))
+        self.add_module('relu', nn.ReLU(inplace=True))
+        self.add_module('conv', nn.Conv2d(num_input_features, num_output_features,
+                                          kernel_size=1, stride=1, bias=False))
+        self.add_module('pool', nn.AvgPool2d(kernel_size=2, stride=(2, 1)))
+
+if __name__ == '__main__':
+    model = DenseNet_FeatureExtractor(1)
+    x = torch.randn(32, 1, 64, 256)
+    y = model(x)
+    print(y.shape)
