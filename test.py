@@ -87,7 +87,10 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                     pred_max_prob = pred_max_prob[:pred_EOS]
                     
                 all_preds.append(pred)
-                confidence_score = pred_max_prob.cumprod(dim=0)[-1]
+                try:
+                    confidence_score = pred_max_prob.cumprod(dim=0)[-1]
+                except:
+                    confidence_score = 0.0  # Case when pred_max_prob is empty
                 confidences.append(confidence_score.item())
 
     return all_preds, img_names_lst, confidences
