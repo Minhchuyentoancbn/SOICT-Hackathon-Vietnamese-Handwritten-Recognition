@@ -8,7 +8,7 @@ submission.ipynb
 *__pycache__*
 
 data/new_*
-saved_models/*.pt
+saved_models/
 checkpoints/*/
 augmentation/frost/
 augmentation/images/
