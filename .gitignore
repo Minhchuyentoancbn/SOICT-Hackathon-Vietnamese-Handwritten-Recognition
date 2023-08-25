@@ -13,7 +13,7 @@ checkpoints/*/
 augmentation/frost/
 augmentation/images/
 
-predictions/*.txt
+predictions/
 scripts/*.sh
 
 models/timm/
