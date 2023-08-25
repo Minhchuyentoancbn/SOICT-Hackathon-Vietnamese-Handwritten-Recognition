@@ -38,6 +38,7 @@ def parse_arguments(argv):
     parser.add_argument('--height', type=int, default=32, help='Height of the input image, default: 32')
     parser.add_argument('--width', type=int, default=128, help='Width of the input image, default: 128')
     parser.add_argument('--grayscale', type=int, default=0, help='Convert image to grayscale which then has 1 channel, default: 0')
+    parser.add_argument('--augment_prob', type=float, default=0.2, help='Augmentation probability, default: 0.2')
 
     # Model hyperparameters
     # VitSTR

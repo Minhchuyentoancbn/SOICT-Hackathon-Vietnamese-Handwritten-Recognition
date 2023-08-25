@@ -39,7 +39,7 @@ def get_data(
     pl.seed_everything(seed)
     np.random.seed(seed)
     
-    data_augment = DataAugment(prob=0.2)
+    data_augment = DataAugment(prob=args.augment_prob)
     if args.grayscale:
         grayscale = transforms.Grayscale()
         align = Align(1, args.height, args.width, args.keep_ratio_with_pad, args.transformer)  # 1 channel for grayscale
