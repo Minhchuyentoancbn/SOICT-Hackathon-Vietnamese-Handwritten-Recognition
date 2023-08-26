@@ -30,12 +30,13 @@ class TransformerRecognitionHead(nn.Module):
     """
     def __init__(self, num_classes, in_planes, sDim=512, max_len_labels=25, encoder_block=4, decoder_block=4):
         super(TransformerRecognitionHead, self).__init__()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.num_classes = num_classes # this is the output classes. So it includes the <EOS>.
         self.in_planes = in_planes
         self.sDim = sDim
         self.max_len_labels = max_len_labels + 1 # +1 for <BOS>
         self.decoder = DecoderUnit(sDim=sDim, xDim=in_planes, yDim=num_classes, num_encoders=encoder_block, num_decoders=decoder_block)
-        self.tgt_mask = self._generate_square_subsequent_mask(self.max_len_labels)
+        self.tgt_mask = self._generate_square_subsequent_mask(self.max_len_labels).to(device)
   
 
     def forward(self, x, text=None, is_train=True, tgt_padding_mask=None):
