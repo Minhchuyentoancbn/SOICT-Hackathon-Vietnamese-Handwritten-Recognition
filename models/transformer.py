@@ -356,6 +356,9 @@ class TransformerDecoderLayer(Module):
         Shape:
             see the docs in Transformer class.
         """
+        # Set device
+        print(tgt.device)
+        print(self.self_attn.in_proj_weight.device)
         tgt2 = self.self_attn(tgt, tgt, tgt, attn_mask=tgt_mask,
                               key_padding_mask=tgt_key_padding_mask)[0]
         tgt = tgt + self.dropout1(tgt2)
