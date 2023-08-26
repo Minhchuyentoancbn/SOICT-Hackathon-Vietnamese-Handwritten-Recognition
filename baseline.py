@@ -106,6 +106,8 @@ class Model(nn.Module):
             self.prediction = nn.Linear(256, num_class)
         elif prediction == 'attention':
             self.prediction = Attention(256, 256, num_class)
+        else:
+            self.prediction = nn.Identity()
 
         # weight initialization
         initialize_weights(self.feature_extractor)
@@ -138,12 +140,10 @@ class Model(nn.Module):
             contextual_feature = self.sequence_modeling(visual_feature)
 
         # Prediction
-        if self.predict_method == 'ctc':
+        if self.predict_method == 'ctc' or self.predict_method == 'transformer':
             prediction = self.prediction(contextual_feature.contiguous())
         elif self.predict_method == 'attention':
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
-        else:
-            prediction = contextual_feature.contiguous()
 
         return prediction
     
