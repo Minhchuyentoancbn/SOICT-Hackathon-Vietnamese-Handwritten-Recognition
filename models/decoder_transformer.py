@@ -92,11 +92,11 @@ class DecoderUnit(nn.Module):
     def forward(self, x, yPrev, tgt_padding_mask=None, tgt_mask=None):
         # x: feature sequence from the image decoder.
         # batch_size, T, _ = x.size()
-        yProj = self.tgt_embedding(yPrev.long().to(x.device))
+        yProj = self.tgt_embedding(yPrev.long().to(self.device))
         yProj = yProj.transpose(1, 0)
         yProj = self.pos(yProj)
 
-        x = self.src_embedding(x)
+        x = self.src_embedding(x).to(self.device)
         x = x.transpose(1, 0)
         output = self.decoder(x, yProj, tgt_mask=tgt_mask, tgt_key_padding_mask=tgt_padding_mask)
         output = self.fc(output)
