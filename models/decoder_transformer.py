@@ -80,7 +80,7 @@ class DecoderUnit(nn.Module):
         self.src_embedding = nn.Linear(xDim, sDim)
 
         self.fc = nn.Linear(sDim, yDim)
-        self.decoder = Transformer(d_model=sDim, nhead=8, num_encoder_layers=num_encoders, num_decoder_layers=num_decoders, dim_feedforward=2048)
+        self.decoder = Transformer(d_model=sDim, nhead=8, num_encoder_layers=num_encoders, num_decoder_layers=num_decoders, dim_feedforward=1024)
         self.pos = PositionalEncoding(self.emdDim, 0.1)
         self.init_weights()
 
