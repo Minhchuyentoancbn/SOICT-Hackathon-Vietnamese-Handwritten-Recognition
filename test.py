@@ -86,7 +86,7 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
             preds_max_prob, _ = preds_prob.max(dim=2)
 
             for pred, pred_max_prob in zip(preds_str, preds_max_prob):
-                if transformer or prediction == 'attention':        
+                if transformer or prediction == 'attention' or prediction == 'transformer':   
                     pred_EOS = pred.find('[s]')
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
                     pred_max_prob = pred_max_prob[:pred_EOS]
