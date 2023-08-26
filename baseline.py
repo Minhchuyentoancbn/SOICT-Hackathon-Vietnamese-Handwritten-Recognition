@@ -9,6 +9,7 @@ from models.transformation import TPS_SpatialTransformerNetwork
 from models.feature_extraction import ResNet_FeatureExtractor, VGG_FeatureExtractor, DenseNet_FeatureExtractor
 from models.sequence_modeling import BidirectionalLSTM
 from models.prediction import Attention
+from models.decoder_transformer import TransformerRecognitionHead
 from models.vitstr import create_vitstr
 from utils import Averager
 
@@ -87,16 +88,19 @@ class Model(nn.Module):
         else:
             output_channel = 512
 
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
-        self.sequence_modeling = nn.Sequential(
-            BidirectionalLSTM(output_channel, 256, 256),
-            BidirectionalLSTM(256, 256, 256)
-        )
-
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
         else:
             self.dropout = nn.Identity()
+
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
+        if prediction == 'transformer':
+            self.sequence_modeling = TransformerRecognitionHead(num_class, output_channel, max_len)
+        else:
+            self.sequence_modeling = nn.Sequential(
+                BidirectionalLSTM(output_channel, 256, 256),
+                BidirectionalLSTM(256, 256, 256)
+            )
 
         if prediction == 'ctc':
             self.prediction = nn.Linear(256, num_class)
@@ -110,7 +114,7 @@ class Model(nn.Module):
         initialize_weights(self.prediction)
 
 
-    def forward(self, images, text, is_train=True, seqlen=None):
+    def forward(self, images, text, is_train=True, seqlen=None, tgt_padding_mask=None):
         # shape of images: (B, C, H, W)
         # Transformation
         if seqlen is None:
@@ -128,13 +132,18 @@ class Model(nn.Module):
         visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
 
         # Sequence modeling
-        contextual_feature = self.sequence_modeling(visual_feature)
+        if self.predict_method == 'transformer':
+            contextual_feature = self.sequence_modeling(visual_feature, text, is_train, tgt_padding_mask)
+        else:
+            contextual_feature = self.sequence_modeling(visual_feature)
 
         # Prediction
         if self.predict_method == 'ctc':
             prediction = self.prediction(contextual_feature.contiguous())
-        else:
+        elif self.predict_method == 'attention':
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
+        else:
+            prediction = contextual_feature.contiguous()
 
         return prediction
     
@@ -167,7 +176,7 @@ class LightningModel(pl.LightningModule):
         else:
             reduction = 'mean'
 
-        if args.transformer or args.prediction == 'attention':
+        if args.transformer or args.prediction != 'ctc':
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing, reduction=reduction)
         else:
             self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
@@ -211,7 +220,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels = batch
         batch_size = images.size(0)
-        if not self.args.transformer:
+        if not (self.args.transformer or self.args.prediction == 'transformer'):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
@@ -229,6 +238,12 @@ class LightningModel(pl.LightningModule):
             preds = self.model(images, text[:, :-1], True) # Align with Attention.forward
             targets = text[:, 1:] # without [GO] Symbol
             loss = self.criterion(preds.view(-1, preds.shape[-1]), targets.contiguous().view(-1))
+        elif self.args.prediction == 'transformer':
+            target = self.converter.encode(labels, batch_max_length=self.args.max_len)
+            padding_mask = self.converter.get_padding_mask(target)
+            preds = self.model(images, text=target[:, :-1], is_train=True, tgt_padding_mask=padding_mask)
+            target = target[:, 1:] # without [GO] Symbol
+            loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
 
         if self.args.focal_loss:
             p = torch.exp(-loss)
@@ -261,7 +276,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels = batch
         batch_size = images.size(0)
-        if self.args.transformer:
+        if self.args.transformer or self.args.prediction == 'transformer':
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
         else:
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
@@ -292,6 +307,12 @@ class LightningModel(pl.LightningModule):
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
             labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
+        elif self.args.prediction == 'transformer':
+            preds = self.model(images, text=None, is_train=False)
+            _, preds_index = preds.max(2)
+            val_loss = self.criterion(preds.view(-1, preds.shape[-1]), target[:, 1:].contiguous().view(-1))
+            length_for_pred = torch.IntTensor([self.converter.batch_max_length - 1] * batch_size)
+            preds_str = self.converter.decode(preds_index, length_for_pred)
 
         if self.args.focal_loss:
             p = torch.exp(-val_loss)
