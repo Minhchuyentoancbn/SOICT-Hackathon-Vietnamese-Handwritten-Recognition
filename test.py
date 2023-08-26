@@ -89,8 +89,9 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                 all_preds.append(pred)
                 try:
                     confidence_score = pred_max_prob.cumprod(dim=0)[-1]
+                    confidences.append(confidence_score.item())
                 except:
                     confidence_score = 0.0  # Case when pred_max_prob is empty
-                confidences.append(confidence_score.item())
+                    confidences.append(confidence_score)
 
     return all_preds, img_names_lst, confidences
