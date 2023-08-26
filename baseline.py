@@ -116,7 +116,7 @@ class Model(nn.Module):
         initialize_weights(self.prediction)
 
 
-    def forward(self, images, text, is_train=True, seqlen=None, tgt_padding_mask=None):
+    def forward(self, images, text=None, is_train=True, seqlen=None, tgt_padding_mask=None):
         # shape of images: (B, C, H, W)
         # Transformation
         if seqlen is None:
@@ -308,7 +308,7 @@ class LightningModel(pl.LightningModule):
             preds_str = self.converter.decode(preds_index, length_for_pred)
             labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
         elif self.args.prediction == 'transformer':
-            preds = self.model(images, text=None, is_train=False)
+            preds = self.model(images, is_train=False)
             _, preds_index = preds.max(2)
             val_loss = self.criterion(preds.view(-1, preds.shape[-1]), target[:, 1:].contiguous().view(-1))
             length_for_pred = torch.IntTensor([self.converter.batch_max_length - 1] * batch_size)
