@@ -35,13 +35,14 @@ class TransformerRecognitionHead(nn.Module):
         self.sDim = sDim
         self.max_len_labels = max_len_labels + 1 # +1 for <BOS>
         self.decoder = DecoderUnit(sDim=sDim, xDim=in_planes, yDim=num_classes, num_encoders=encoder_block, num_decoders=decoder_block)
+        self.tgt_mask = self._generate_square_subsequent_mask(self.max_len_labels)
   
 
     def forward(self, x, text=None, is_train=True, tgt_padding_mask=None):
         # Decoder
         if is_train:
-            tgt_mask = self._generate_square_subsequent_mask(text.size(1)).to(x.device)
-            outputs = self.decoder(x, text, tgt_padding_mask=tgt_padding_mask, tgt_mask=tgt_mask)
+            print('Text shape: ', text.shape)
+            outputs = self.decoder(x, text, tgt_padding_mask=tgt_padding_mask, tgt_mask=self.tgt_mask)
             return outputs  # (N, T, C)
         else:
             batch_size = x.size(0)
