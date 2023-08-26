@@ -240,7 +240,7 @@ class LightningModel(pl.LightningModule):
             loss = self.criterion(preds.view(-1, preds.shape[-1]), targets.contiguous().view(-1))
         elif self.args.prediction == 'transformer':
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
-            padding_mask = self.converter.get_padding_mask(target)
+            padding_mask = self.converter.get_padding_mask(target).to(images.device)
             preds = self.model(images, text=target[:, :-1], is_train=True, tgt_padding_mask=padding_mask)
             target = target[:, 1:] # without [GO] Symbol
             loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
