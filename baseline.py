@@ -186,10 +186,10 @@ class LightningModel(pl.LightningModule):
 
         if args.scheduler:
             assert args.epochs >= args.decay_epochs, 'Number of epochs must be greater than number of decay epochs'
-        num_iter = dset_size // args.batch_size * (args.epochs - args.decay_epochs)
+        num_iter = dset_size // args.batch_size * args.decay_epochs
         self.num_iter = num_iter
         self.automatic_optimization = False
-        self.epoch_num = 0
+        # self.epoch_num = 0
 
         if args.transformer:
             # filter that only require gradient decent
@@ -245,16 +245,16 @@ class LightningModel(pl.LightningModule):
 
         # Update learning rate
         scheduler = self.lr_schedulers()
-        if scheduler is not None and self.epoch_num >= self.args.decay_epochs:
+        if scheduler is not None:
             scheduler.step()
         # Log learning rate
         self.log('lr', opt.param_groups[0]['lr'], prog_bar=True)
 
 
-    def on_train_epoch_end(self):
-        # print(f'Training Loss: {self.loss_train_avg.val():.4f}')
-        # self.loss_train_avg.reset()
-        self.epoch_num += 1
+    # def on_train_epoch_end(self):
+    #     # print(f'Training Loss: {self.loss_train_avg.val():.4f}')
+    #     # self.loss_train_avg.reset()
+    #     self.epoch_num += 1
 
 
     def validation_step(self, batch, batch_idx):
@@ -353,8 +353,11 @@ class LightningModel(pl.LightningModule):
 
         # Learning rate scheduler
         if self.args.scheduler:
-            scheduler = optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=self.num_iter
+            # scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            #     optimizer, T_max=self.num_iter
+            # )
+            scheduler = optim.lr_scheduler.MultiStepLR(
+                optimizer, milestones=[self.num_iter, ]
             )
             return [optimizer, ], [scheduler, ]
 
