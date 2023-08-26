@@ -166,6 +166,14 @@ class TokenLabelConverter(object):
             text = ''.join([self.character[i] for i in text_index[index, :]])
             texts.append(text)
         return texts
+    
+
+    def get_padding_mask(self, text):
+        padding_mask = torch.BoolTensor(len(text), self.batch_max_length - 1).fill_(True)
+        for i, t in enumerate(text):
+            l = len(t) + 1
+            padding_mask[i][:l] = False
+        return padding_mask
 
 
 class Averager(object):
