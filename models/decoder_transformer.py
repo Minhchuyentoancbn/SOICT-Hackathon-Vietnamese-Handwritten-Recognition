@@ -40,7 +40,7 @@ class TransformerRecognitionHead(nn.Module):
     def forward(self, x, text=None, is_train=True, tgt_padding_mask=None):
         # Decoder
         if is_train:
-            tgt_mask = self._generate_square_subsequent_mask(text.size(1))
+            tgt_mask = self._generate_square_subsequent_mask(text.size(1)).to(x.device)
             outputs = self.decoder(x, text, tgt_padding_mask=tgt_padding_mask, tgt_mask=tgt_mask)
             return outputs  # (N, T, C)
         else:
