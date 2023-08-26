@@ -324,7 +324,7 @@ class LightningModel(pl.LightningModule):
         # Compute CER
         total_cer = 0
         for gt, pred in zip(labels, preds_str):
-            if self.args.transformer:
+            if self.args.transformer or self.args.prediction == 'transformer':
                 pred_EOS = pred.find('[s]')
                 pred = pred[:pred_EOS]
             elif self.args.prediction == 'attention':
