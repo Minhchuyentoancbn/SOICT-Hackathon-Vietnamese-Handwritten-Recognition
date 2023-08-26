@@ -95,7 +95,7 @@ class Model(nn.Module):
 
         self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
         if prediction == 'transformer':
-            self.sequence_modeling = TransformerRecognitionHead(num_class, output_channel, max_len)
+            self.sequence_modeling = TransformerRecognitionHead(num_class, output_channel, max_len_labels=max_len)
         else:
             self.sequence_modeling = nn.Sequential(
                 BidirectionalLSTM(output_channel, 256, 256),
