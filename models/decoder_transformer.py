@@ -28,7 +28,7 @@ class TransformerRecognitionHead(nn.Module):
     input: [b x T x in_planes]
     output: probability sequence: [b x T x num_classes]
     """
-    def __init__(self, num_classes, in_planes, sDim=512, max_len_labels=25, encoder_block=4, decoder_block=4):
+    def __init__(self, num_classes, in_planes, sDim=256, max_len_labels=25, encoder_block=4, decoder_block=4):
         super(TransformerRecognitionHead, self).__init__()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.num_classes = num_classes # this is the output classes. So it includes the <EOS>.
