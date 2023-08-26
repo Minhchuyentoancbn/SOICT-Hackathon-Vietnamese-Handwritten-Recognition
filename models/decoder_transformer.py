@@ -46,10 +46,10 @@ class TransformerRecognitionHead(nn.Module):
         else:
             batch_size = x.size(0)
             # Decoder
-            predicted_scores = torch.zeros(batch_size, self.max_len_labels - 1, self.num_classes)
+            predicted_scores = torch.zeros(batch_size, self.max_len_labels - 1, self.num_classes).to(x.device)  # Initialize prediction
             outputs = torch.zeros(batch_size, self.max_len_labels).long()  # Initialize prediction
             # Initialize padding mask to true
-            tgt_padding_mask = torch.BoolTensor(batch_size, self.max_len_labels).fill_(True)
+            tgt_padding_mask = torch.BoolTensor(batch_size, self.max_len_labels).fill_(True).to(x.device)
             for i in range(self.max_len_labels - 1):
                 tgt_padding_mask[:, i] = False
                 pred_prob = self.decoder(x, outputs, tgt_padding_mask=tgt_padding_mask)  # (N, T, C)
@@ -99,7 +99,6 @@ class DecoderUnit(nn.Module):
         x = self.src_embedding(x)
         x = x.transpose(1, 0)
         # Print the device
-        print(x.device, yProj.device)
         output = self.decoder(x, yProj, tgt_mask=tgt_mask, tgt_key_padding_mask=tgt_padding_mask)
         output = self.fc(output)
         output = output.transpose(1, 0)

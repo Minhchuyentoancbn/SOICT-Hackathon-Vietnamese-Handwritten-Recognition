@@ -310,7 +310,7 @@ class LightningModel(pl.LightningModule):
         elif self.args.prediction == 'transformer':
             preds = self.model(images, is_train=False)
             _, preds_index = preds.max(2)
-            val_loss = self.criterion(preds.view(-1, preds.shape[-1]), target[:, 1:].contiguous().view(-1))
+            val_loss = self.criterion(preds.view(-1, preds.shape[-1]), target[:, 1:-1].contiguous().view(-1))
             length_for_pred = torch.IntTensor([self.converter.batch_max_length - 1] * batch_size)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
