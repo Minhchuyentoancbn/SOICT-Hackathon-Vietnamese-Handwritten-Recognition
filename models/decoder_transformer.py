@@ -98,6 +98,8 @@ class DecoderUnit(nn.Module):
 
         x = self.src_embedding(x)
         x = x.transpose(1, 0)
+        # Print the device
+        print(x.device, yProj.device)
         output = self.decoder(x, yProj, tgt_mask=tgt_mask, tgt_key_padding_mask=tgt_padding_mask)
         output = self.fc(output)
         output = output.transpose(1, 0)
