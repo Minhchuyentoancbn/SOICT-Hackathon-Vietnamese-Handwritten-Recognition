@@ -193,10 +193,10 @@ class LightningModel(pl.LightningModule):
         if args.num_samples > 0:
             dset_size = args.num_samples
 
-        if args.scheduler:
-            assert args.epochs >= args.decay_epochs, 'Number of epochs must be greater than number of decay epochs'
-        num_iter = dset_size // args.batch_size * args.decay_epochs
-        self.num_iter = num_iter
+        # if args.scheduler:
+        #     assert args.epochs >= args.decay_epochs, 'Number of epochs must be greater than number of decay epochs'
+        num_iters = [dset_size // args.batch_size * epoch for epoch in args.decay_epochs]
+        self.num_iter = num_iters
         self.automatic_optimization = False
         # self.epoch_num = 0
 
@@ -378,7 +378,7 @@ class LightningModel(pl.LightningModule):
             #     optimizer, T_max=self.num_iter
             # )
             scheduler = optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=[self.num_iter, ]
+                optimizer, milestones=self.num_iter
             )
             return [optimizer, ], [scheduler, ]
 
