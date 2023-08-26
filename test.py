@@ -69,9 +69,14 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                 preds_size = torch.IntTensor([preds.size(1)] * batch_size)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, preds_size)
-            else:
+            elif prediction == 'attention':
                 preds = model(images, text_for_pred, is_train=False)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+                preds_str = converter.decode(preds_index, length_for_pred)
+            elif prediction == 'transformer':
+                preds = model(images, text=None, is_train=False)
+                _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+                length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
                 preds_str = converter.decode(preds_index, length_for_pred)
 
             img_names_lst += list(img_names)
