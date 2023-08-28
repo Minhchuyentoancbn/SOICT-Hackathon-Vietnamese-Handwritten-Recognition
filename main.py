@@ -41,6 +41,10 @@ def parse_arguments(argv):
     parser.add_argument('--grayscale', type=int, default=0, help='Convert image to grayscale which then has 1 channel, default: 0')
     parser.add_argument('--augment_prob', type=float, default=0.2, help='Augmentation probability, default: 0.2')
 
+    # SynthText
+    parser.add_argument('--synth', type=int, default=0, help='Whether to use SynthText or not, default: 0 (not use SynthText)')
+    parser.add_argument('--num_synth', type=int, default=0, help='Number of SynthText samples to train on, default: 0 (all samples)')
+
     # Model hyperparameters
     # VitSTR
     choices = ["vitstr_tiny_patch16_224", "vitstr_small_patch16_224", "vitstr_base_patch16_224", ]
