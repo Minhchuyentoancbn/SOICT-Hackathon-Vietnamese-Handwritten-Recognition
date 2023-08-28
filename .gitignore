@@ -9,6 +9,7 @@ generate_data.ipynb
 *__pycache__*
 
 data/new_*
+data/two_characters/
 saved_models/
 checkpoints/*/
 augmentation/frost/
