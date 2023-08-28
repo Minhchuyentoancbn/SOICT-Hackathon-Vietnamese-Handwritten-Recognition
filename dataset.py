@@ -53,10 +53,10 @@ class HandWrittenDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         try:
-            img_name = f'{self.name}_img_{idx}.jpg'
+            img_name = f'{self.name}_{idx}.jpg'
             image = Image.open(os.path.join(self.root_dir, img_name))
         except:
-            img_name = f'{self.name}_img_{idx}.png'
+            img_name = f'{self.name}_{idx}.png'
             image = Image.open(os.path.join(self.root_dir, img_name))
 
         if self.transform:

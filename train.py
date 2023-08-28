@@ -1,12 +1,12 @@
 import torch
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Subset, ConcatDataset
 from torchvision import transforms
 
 import numpy as np
 import pandas as pd
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment
-from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR
+from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
 from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, make_submission
 from baseline import Model, LightningModel
 from test import predict
@@ -61,15 +61,20 @@ def get_data(
 
     train_dataset = HandWrittenDataset(
         TRAIN_DIR, LABEL_FILE,
-        name='train', transform=train_transform
+        name='train_img', transform=train_transform
     )
     val_dataset = HandWrittenDataset(
         TRAIN_DIR, LABEL_FILE,
-        name='train', transform=test_transform
+        name='train_img', transform=test_transform
     )
     test_dataset = HandWrittenDataset(
         PUBLIC_TEST_DIR,
-        name='public_test', transform=test_transform
+        name='public_test_img', transform=test_transform
+    )
+
+    synth_dataset = HandWrittenDataset(
+        SYNTH_TRAIN_DIR, SYNTH_LABEL_FILE,
+        name='merged', transform=test_transform
     )
 
     if args.train:
@@ -101,6 +106,14 @@ def get_data(
         if args.num_samples > 0:
             train_set = Subset(train_dataset, np.random.choice(len(train_dataset), args.num_samples, replace=False))
         val_set = None
+
+    if args.synth:
+        print('Using SynthText data for training')
+        synth_inds = np.arange(len(synth_dataset))
+        if args.num_synth > 0:
+            synth_inds = np.random.choice(synth_inds, args.num_synth, replace=False)
+            synth_set = Subset(synth_dataset, synth_inds)
+        train_set = ConcatDataset([train_set, synth_set])
 
     # Set up the data loaders
     train_loader = DataLoader(
