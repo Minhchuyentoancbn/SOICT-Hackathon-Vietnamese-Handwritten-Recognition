@@ -12,8 +12,8 @@ SYNTH_LABEL_FILE = 'data/generated_train.txt'
 # TRAIN_DIR = '/kaggle/input/handwritten-ocr-hackathon/training_data/new_train'
 # PUBLIC_TEST_DIR = '/kaggle/input/handwritten-ocr-hackathon/public_test_data/new_public_test'
 
-TRAIN_DIR = '/kaggle/input/handwritten-ocr/training_data/new_train'
-PUBLIC_TEST_DIR = '/kaggle/input/handwritten-ocr/public_test_data/new_public_test'
+TRAIN_DIR = '/kaggle/input/handwritten-ocr-hackathon/training_data/new_train'
+PUBLIC_TEST_DIR = '/kaggle/input/handwritten-ocr-hackathon/public_test_data/new_public_test'
 
 # PUBLIC_TEST_DIR = '/kaggle/input/handwritten-ocr/public_test_data/new_public_test'
 # TRAIN_DIR = '/kaggle/input/handwritten-ocr/training_data/new_train'
