@@ -72,11 +72,6 @@ def get_data(
         name='public_test_img', transform=test_transform
     )
 
-    synth_dataset = HandWrittenDataset(
-        SYNTH_TRAIN_DIR, SYNTH_LABEL_FILE,
-        name='merged', transform=test_transform
-    )
-
     if args.train:
         # Split the training data into train and validation
         # NOTE: Use GAN data only for training
@@ -107,7 +102,12 @@ def get_data(
             train_set = Subset(train_dataset, np.random.choice(len(train_dataset), args.num_samples, replace=False))
         val_set = None
 
+    # Add SynthText data
     if args.synth:
+        synth_dataset = HandWrittenDataset(
+            SYNTH_TRAIN_DIR, SYNTH_LABEL_FILE,
+            name='merged', transform=test_transform
+        )
         print('Using SynthText data for training')
         synth_inds = np.arange(len(synth_dataset))
         if args.num_synth > 0:
