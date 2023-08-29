@@ -4,6 +4,42 @@ import pandas as pd
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+def count_denmark(text):
+    """
+    Count the number for each type of denmark in a string.
+
+    Arguments:
+    ----------
+    text: list(str)
+        List of strings.
+
+    Returns:
+    --------
+    marks: torch.Tensor(N, 5)
+        The number of each type of denmark in the string.
+    """
+    sac = list('ÁÉÍÓÚÝáéíóúýẤấẮắẾếỐốỚớỨứ')
+    huy = list('ÀÈÌÒÙỲàèìòùỳẦầẰằỀềỒồỜờỪừ')
+    nga = list('ÃẼĨÕŨỸãẽĩõũỹẪẫẴẵỄễỖỗỠỡỮữ')
+    nan = list('ẠẸỊỌỤỴạẹịọụỵẬậẶặỆệỘộỢợỰự')
+    hoi = list('ẢẺỈỎỦỶảẻỉỏủỷẨẩẲẳỂểỔổỞởỬử')
+
+    N = len(text)
+    marks = torch.zeros(N, 5)
+    for i, t in enumerate(text):
+        for c in t:
+            if c in sac:
+                marks[i, 0] += 1
+            elif c in huy:
+                marks[i, 1] += 1
+            elif c in nga:
+                marks[i, 2] += 1
+            elif c in nan:
+                marks[i, 3] += 1
+            elif c in hoi:
+                marks[i, 4] += 1
+    return marks
+
 
 class CTCLabelConverter(object):
     """ Convert between text-label and text-index """

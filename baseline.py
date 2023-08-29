@@ -10,6 +10,7 @@ from models.feature_extraction import ResNet_FeatureExtractor, VGG_FeatureExtrac
 from models.sequence_modeling import BidirectionalLSTM
 from models.prediction import Attention
 from models.decoder_transformer import TransformerRecognitionHead
+from models.counter import MarkCounter
 from models.vitstr import create_vitstr
 from utils import Averager
 
@@ -128,8 +129,8 @@ class Model(nn.Module):
             return prediction
 
         # Feature extraction
-        visual_feature = self.feature_extractor(images)
-        visual_feature = self.dropout(visual_feature)  # Dropout
+        feature_map = self.feature_extractor(images)
+        visual_feature = self.dropout(feature_map)  # Dropout
         visual_feature = self.adaptive_pool(visual_feature.permute(0, 3, 1, 2)) # (B, C, H, W) -> (B, W, C, H) -> (B, W, C, 1)
         visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
 
@@ -145,7 +146,7 @@ class Model(nn.Module):
         elif self.predict_method == 'attention':
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
 
-        return prediction
+        return prediction, feature_map
     
 
 class LightningModel(pl.LightningModule):
@@ -170,6 +171,14 @@ class LightningModel(pl.LightningModule):
         self.converter = converter
         self.args = args
         self.cer = CharErrorRate()
+
+        if (not args.transformer) and args.count_mark:
+            if args.feature_extractor == 'densenet':
+                output_channel = 2208
+            else:
+                output_channel = 512
+            self.mark_counter = MarkCounter(output_channel)
+            self.mark_crit = nn.MSELoss()
         
         if args.focal_loss:
             reduction = 'none'
@@ -218,7 +227,7 @@ class LightningModel(pl.LightningModule):
         opt.zero_grad()
 
         # Prepare the data
-        images, labels = batch
+        images, labels, num_marks = batch
         batch_size = images.size(0)
         if not (self.args.transformer or self.args.prediction == 'transformer'):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
@@ -230,24 +239,29 @@ class LightningModel(pl.LightningModule):
             preds = self.model(images, text=target, seqlen=self.converter.batch_max_length)
             loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
         elif self.args.prediction == 'ctc':
-            preds = self.model(images, text)
+            preds, visual_feature = self.model(images, text)
             preds_size = torch.IntTensor([preds.size(1)] * batch_size)
             preds = preds.log_softmax(2).permute(1, 0, 2) # (B, T, C) -> (T, B, C)
             loss = self.criterion(preds, text, preds_size, length)
         elif self.args.prediction == 'attention':
-            preds = self.model(images, text[:, :-1], True) # Align with Attention.forward
+            preds, visual_feature = self.model(images, text[:, :-1], True) # Align with Attention.forward
             targets = text[:, 1:] # without [GO] Symbol
             loss = self.criterion(preds.view(-1, preds.shape[-1]), targets.contiguous().view(-1))
         elif self.args.prediction == 'transformer':
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
             padding_mask = self.converter.get_padding_mask(target).to(images.device)
-            preds = self.model(images, text=target[:, :-1], is_train=True, tgt_padding_mask=padding_mask)
+            preds, visual_feature = self.model(images, text=target[:, :-1], is_train=True, tgt_padding_mask=padding_mask)
             target = target[:, 1:] # without [GO] Symbol
             loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
 
         if self.args.focal_loss:
             p = torch.exp(-loss)
             loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * loss).mean()
+
+        if (not self.args.transformer) and self.args.count_mark:
+            mark_pred = self.mark_counter(visual_feature)
+            mark_loss = self.mark_crit(mark_pred, num_marks)
+            loss = mark_loss + loss
 
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
         # self.loss_train_avg.add(loss.item())
@@ -274,7 +288,7 @@ class LightningModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # Prepare the data
-        images, labels = batch
+        images, labels, num_marks = batch
         batch_size = images.size(0)
         if self.args.transformer or self.args.prediction == 'transformer':
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
@@ -294,13 +308,13 @@ class LightningModel(pl.LightningModule):
             length_for_pred = torch.IntTensor([self.converter.batch_max_length - 1] * batch_size)
             preds_str = self.converter.decode(preds_index[:, 1:], length_for_pred)
         elif self.args.prediction == 'ctc':
-            preds = self.model(images, text_for_pred)
+            preds, visual_feature = self.model(images, text_for_pred)
             pred_size = torch.IntTensor([preds.size(1)] * batch_size)
             val_loss = self.criterion(preds.log_softmax(2).permute(1, 0, 2), text_for_loss, pred_size, length_for_loss)
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index.data, pred_size.data)
         elif self.args.prediction == 'attention':
-            preds = self.model(images, text_for_pred, False)
+            preds, visual_feature = self.model(images, text_for_pred, False)
             preds = preds[:, :text_for_loss.shape[1] - 1, :]
             target = text_for_loss[:, 1:] # without [GO] Symbol
             val_loss = self.criterion(preds.contiguous().view(-1, preds.shape[-1]), target.contiguous().view(-1))
@@ -308,7 +322,7 @@ class LightningModel(pl.LightningModule):
             preds_str = self.converter.decode(preds_index, length_for_pred)
             labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
         elif self.args.prediction == 'transformer':
-            preds = self.model(images, is_train=False)
+            preds, visual_feature = self.model(images, is_train=False)
             _, preds_index = preds.max(2)
             val_loss = self.criterion(preds.view(-1, preds.shape[-1]), target[:, 1:-1].contiguous().view(-1))
             length_for_pred = torch.IntTensor([self.converter.batch_max_length - 1] * batch_size)
@@ -317,6 +331,11 @@ class LightningModel(pl.LightningModule):
         if self.args.focal_loss:
             p = torch.exp(-val_loss)
             val_loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * val_loss).mean()
+
+        if (not self.args.transformer) and self.args.count_mark:
+            mark_pred = self.mark_counter(visual_feature)
+            mark_loss = self.mark_crit(mark_pred, num_marks)
+            val_loss = mark_loss + val_loss
 
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
         self.loss_val_avg.add(val_loss.item())
