@@ -57,6 +57,8 @@ def parse_arguments(argv):
     parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, transformer')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
 
+    parser.add_argument('--count_mark', type=int, default=0, help='Whether to count mark or not, default: 0 (not count mark)')
+
     return parser.parse_args(argv)
 
 
