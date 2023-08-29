@@ -261,7 +261,7 @@ class LightningModel(pl.LightningModule):
         if (not self.args.transformer) and self.args.count_mark:
             mark_pred = self.mark_counter(visual_feature)
             mark_loss = self.mark_crit(mark_pred, num_marks)
-            loss = mark_loss + loss
+            loss = mark_loss * self.args.mark_alpha + loss
 
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
         # self.loss_train_avg.add(loss.item())
@@ -335,7 +335,7 @@ class LightningModel(pl.LightningModule):
         if (not self.args.transformer) and self.args.count_mark:
             mark_pred = self.mark_counter(visual_feature)
             mark_loss = self.mark_crit(mark_pred, num_marks)
-            val_loss = mark_loss + val_loss
+            val_loss = mark_loss * self.args.mark_alpha + val_loss
 
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
         self.loss_val_avg.add(val_loss.item())
