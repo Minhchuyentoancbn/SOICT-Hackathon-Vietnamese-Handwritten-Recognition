@@ -179,6 +179,7 @@ class LightningModel(pl.LightningModule):
                 output_channel = 512
             self.mark_counter = MarkCounter(output_channel)
             self.mark_crit = nn.MSELoss()
+            initialize_weights(self.mark_counter)
         
         if args.focal_loss:
             reduction = 'none'
