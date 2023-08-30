@@ -144,7 +144,7 @@ def train(args):
     train_loader, val_loader, test_loader, train_set, val_set, test_set = get_data(args.batch_size, args.seed, args)
 
     # Get the converter
-    if args.transformer or args.prediction == 'transformer':
+    if args.transformer:
         converter = TokenLabelConverter(args.max_len)
     elif args.prediction == 'ctc':
         converter = CTCLabelConverter()

@@ -73,11 +73,6 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                 preds, _ = model(images, text_for_pred, is_train=False)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, length_for_pred)
-            elif prediction == 'transformer':
-                preds, _ = model(images, text=None, is_train=False)
-                _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
-                length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
-                preds_str = converter.decode(preds_index, length_for_pred)
 
             img_names_lst += list(img_names)
 
@@ -86,7 +81,7 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
             preds_max_prob, _ = preds_prob.max(dim=2)
 
             for pred, pred_max_prob in zip(preds_str, preds_max_prob):
-                if transformer or prediction == 'attention' or prediction == 'transformer':   
+                if transformer or prediction == 'attention':   
                     pred_EOS = pred.find('[s]')
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
                     pred_max_prob = pred_max_prob[:pred_EOS]
