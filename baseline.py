@@ -149,7 +149,7 @@ class Model(nn.Module):
         elif self.predict_method == 'attention':
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
         elif self.predict_method == 'srn':
-            prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
+            prediction = self.prediction(contextual_feature)
 
         return prediction, feature_map
     
