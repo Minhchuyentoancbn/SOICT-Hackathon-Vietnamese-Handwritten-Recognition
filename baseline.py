@@ -197,6 +197,10 @@ class LightningModel(pl.LightningModule):
             self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
         elif args.prediction == 'srn':
             self.criterion = cal_performance
+            if args.label_smoothing > 0:
+                self.smoothing = '0'
+            else:
+                self.smoothing = '1'
 
 
         # self.loss_train_avg = Averager()
@@ -257,7 +261,7 @@ class LightningModel(pl.LightningModule):
             loss = self.criterion(preds.view(-1, preds.shape[-1]), targets.contiguous().view(-1))
         elif self.args.prediction == 'srn':
             preds, visual_feature = self.model(images, None)
-            loss = self.criterion(preds, labels, self.converter.PAD)
+            loss = self.criterion(preds, text, self.converter.PAD, self.smoothing)
 
         if self.args.focal_loss:
             p = torch.exp(-loss)
@@ -328,7 +332,7 @@ class LightningModel(pl.LightningModule):
             labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
         elif self.args.prediction == 'srn':
             preds, visual_feature = self.model(images, None)
-            val_loss = self.criterion(preds, text_for_loss, self.converter.PAD)
+            val_loss = self.criterion(preds, text_for_loss, self.converter.PAD, self.smoothing)
             _, preds_index = preds[2].max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
             labels = self.converter.decode(text_for_loss, length_for_loss)
