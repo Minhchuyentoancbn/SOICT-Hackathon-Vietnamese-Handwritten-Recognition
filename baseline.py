@@ -9,6 +9,7 @@ from models.transformation import TPS_SpatialTransformerNetwork
 from models.feature_extraction import ResNet_FeatureExtractor, VGG_FeatureExtractor, DenseNet_FeatureExtractor
 from models.sequence_modeling import BidirectionalLSTM
 from models.prediction import Attention
+from models.srn import Transforme_Encoder, SRN_Decoder, cal_performance
 from models.counter import MarkCounter
 from models.vitstr import create_vitstr
 from utils import Averager
@@ -95,15 +96,20 @@ class Model(nn.Module):
 
         self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
 
-        self.sequence_modeling = nn.Sequential(
-            BidirectionalLSTM(output_channel, 256, 256),
-            BidirectionalLSTM(256, 256, 256)
-        )
+        if prediction == 'srn':
+            self.sequence_modeling = Transforme_Encoder(output_channel, n_position=65)
+        else:
+            self.sequence_modeling = nn.Sequential(
+                BidirectionalLSTM(output_channel, 256, 256),
+                BidirectionalLSTM(256, 256, 256)
+            )
 
         if prediction == 'ctc':
             self.prediction = nn.Linear(256, num_class)
         elif prediction == 'attention':
             self.prediction = Attention(256, 256, num_class)
+        elif prediction == 'srn':
+            self.prediction = SRN_Decoder(n_position=65, N_max_character=max_len + 1, n_class=num_class)
         else:
             self.prediction = nn.Identity()
 
@@ -132,12 +138,17 @@ class Model(nn.Module):
         visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
 
         # Sequence modeling
-        contextual_feature = self.sequence_modeling(visual_feature)
+        if self.predict_method == 'srn':
+            contextual_feature = self.sequence_modeling(visual_feature, src_mask=None)[0]
+        else:
+            contextual_feature = self.sequence_modeling(visual_feature)
 
         # Prediction
         if self.predict_method == 'ctc':
             prediction = self.prediction(contextual_feature.contiguous())
         elif self.predict_method == 'attention':
+            prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
+        elif self.predict_method == 'srn':
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
 
         return prediction, feature_map
@@ -180,11 +191,13 @@ class LightningModel(pl.LightningModule):
         else:
             reduction = 'mean'
 
-        if args.transformer or args.prediction != 'ctc':
+        if args.transformer or args.prediction == 'attention':
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing, reduction=reduction)
-        else:
+        elif args.prediction == 'ctc':
             self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
-           
+        elif args.prediction == 'srn':
+            self.criterion = cal_performance
+
 
         # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
@@ -242,6 +255,9 @@ class LightningModel(pl.LightningModule):
             preds, visual_feature = self.model(images, text[:, :-1], True) # Align with Attention.forward
             targets = text[:, 1:] # without [GO] Symbol
             loss = self.criterion(preds.view(-1, preds.shape[-1]), targets.contiguous().view(-1))
+        elif self.args.prediction == 'srn':
+            preds = self.model(images, None)
+            loss = self.criterion(preds, labels, self.converter.PAD)
 
         if self.args.focal_loss:
             p = torch.exp(-loss)
@@ -310,6 +326,12 @@ class LightningModel(pl.LightningModule):
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
             labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
+        elif self.args.prediction == 'srn':
+            preds = self.model(images, None)
+            val_loss = self.criterion(preds, text_for_loss, self.converter.PAD)
+            _, preds_index = preds[2].max(2)
+            preds_str = self.converter.decode(preds_index, length_for_pred)
+            labels = self.converter.decode(text_for_loss, length_for_loss)
 
         if self.args.focal_loss:
             p = torch.exp(-val_loss)

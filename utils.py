@@ -204,12 +204,48 @@ class TokenLabelConverter(object):
         return texts
     
 
-    def get_padding_mask(self, text):
-        padding_mask = torch.BoolTensor(len(text), self.batch_max_length - 1).fill_(True)
+class SRNConverter(object):
+    """ Convert between text-label and text-index """
+
+    def __init__(self):
+        # character (str): set of the possible characters.
+        character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ$#'
+        self.character = list(character)
+        self.num_classes = len(self.character)
+        self.PAD = len(self.character) - 1
+        self.dict = {}
+        for i, char in enumerate(self.character):
+            self.dict[char] = i
+
+    def encode(self, text, batch_max_length=25):
+        """ convert text-label into text-index.
+        input:
+            text: text labels of each image. [batch_size]
+            batch_max_length: max length of text label in the batch. 25 by default
+
+        output:
+            text : the input of attention decoder. [batch_size x (max_length+2)] +1 for [GO] token and +1 for [s] token.
+                text[:, 0] is [GO] token and text is padded with [GO] token after [s] token.
+            length : the length of output of attention decoder, which count [s] token also. [3, 7, ....] [batch_size]
+        """
+        length = [len(s) + 1 for s in text]  # +1 for [s] at end of sentence.
+        # additional +1 for [GO] at first step. batch_text is padded with [GO] token after [s] token.
+        batch_text = torch.LongTensor(len(text), batch_max_length + 1).fill_(self.PAD).to(device)
         for i, t in enumerate(text):
-            l = len(t) + 1
-            padding_mask[i][:l] = False
-        return padding_mask
+            t = list(t + self.character[-2])
+            text = [self.dict[char] for char in t]
+            # t_mask = [1 for i in range(len(text) + 1)]
+            batch_text[i][0:len(text)] = torch.LongTensor(text)  # batch_text[:, len_text+1] = [EOS] token
+        return batch_text.to(device), torch.IntTensor(length).to(device)
+
+    def decode(self, text_index, length):
+        """ convert text-index into text-label. """
+        texts = []
+        for index, l in enumerate(length):
+            text = ''.join([self.character[i] for i in text_index[index, :]])
+            idx = text.find('$')
+            texts.append(text[:idx])
+        return texts
 
 
 class Averager(object):

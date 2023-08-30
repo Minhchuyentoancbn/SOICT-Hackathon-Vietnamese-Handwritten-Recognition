@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
-from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, make_submission
+from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, make_submission
 from baseline import Model, LightningModel
 from test import predict
 
@@ -150,8 +150,10 @@ def train(args):
         converter = CTCLabelConverter()
     elif args.prediction == 'attention':
         converter = AttnLabelConverter()
-
+    elif args.prediction == 'srn':
+        converter = SRNConverter()
     NUM_CLASSES = converter.num_classes
+    
     if args.grayscale:
         input_channel = 1
     else:
