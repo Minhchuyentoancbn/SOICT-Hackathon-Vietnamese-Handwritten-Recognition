@@ -5,7 +5,7 @@ from torchvision import transforms
 
 import numpy as np
 import pandas as pd
-from dataset import HandWrittenDataset, Align, collate_fn, DataAugment
+from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
 from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, make_submission
 from baseline import Model, LightningModel
@@ -41,7 +41,10 @@ def get_data(
     
     data_augment = DataAugment(prob=args.augment_prob)
     if args.grayscale:
-        grayscale = transforms.Grayscale()
+        if args.otsu:
+            grayscale = OtsuGrayscale()
+        else:
+            grayscale = transforms.Grayscale()
         align = Align(1, args.height, args.width, args.keep_ratio_with_pad, args.transformer)  # 1 channel for grayscale
     else:
         grayscale = transforms.Compose([])  # Do nothing
