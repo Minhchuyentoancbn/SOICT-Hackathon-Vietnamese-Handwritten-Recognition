@@ -74,7 +74,8 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, length_for_pred)
             elif prediction == 'srn':
-                preds = model(images, None)[2]
+                preds, _ = model(images, None)
+                preds = preds[2]
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, length_for_pred)
 
