@@ -332,7 +332,7 @@ class Transition21(nn.Sequential):
         self.add_module('pool', nn.AvgPool2d(kernel_size=2, stride=(2, 1)))
 
 if __name__ == '__main__':
-    model = DenseNet_FeatureExtractor(1)
+    model = ResNet_FeatureExtractor(1, 512)
     x = torch.randn(32, 1, 64, 256)
     y = model(x)
     print(y.shape)
