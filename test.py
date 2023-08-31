@@ -90,6 +90,9 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                     pred_EOS = pred.find('[s]')
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
                     pred_max_prob = pred_max_prob[:pred_EOS]
+                elif prediction == 'srn':
+                    pred_EOS = len(pred)
+                    pred_max_prob = pred_max_prob[:pred_EOS]
                     
                 all_preds.append(pred)
                 try:
