@@ -7,6 +7,7 @@
 
 data/new_*
 data/two_characters/
+data/synthesis/
 saved_models/
 checkpoints/*/
 augmentation/frost/
