@@ -97,7 +97,7 @@ class Model(nn.Module):
         self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
 
         if prediction == 'srn':
-            self.sequence_modeling = Transforme_Encoder(output_channel, n_position=65)
+            self.sequence_modeling = Transforme_Encoder(output_channel, n_position=img_width // 4 + 1)
         else:
             self.sequence_modeling = nn.Sequential(
                 BidirectionalLSTM(output_channel, 256, 256),
@@ -109,7 +109,7 @@ class Model(nn.Module):
         elif prediction == 'attention':
             self.prediction = Attention(256, 256, num_class)
         elif prediction == 'srn':
-            self.prediction = SRN_Decoder(n_position=65, N_max_character=max_len + 1, n_class=num_class)
+            self.prediction = SRN_Decoder(n_position=img_width // 4 + 1, N_max_character=max_len + 1, n_class=num_class)
         else:
             self.prediction = nn.Identity()
 
