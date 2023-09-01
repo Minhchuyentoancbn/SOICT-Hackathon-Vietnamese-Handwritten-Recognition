@@ -109,12 +109,12 @@ def get_data(
     if args.synth:
         synth_dataset = HandWrittenDataset(
             SYNTH_TRAIN_DIR, SYNTH_LABEL_FILE,
-            name='merged', transform=test_transform
+            name='gen_image', transform=test_transform
         )
         print('Using SynthText data for training')
         synth_inds = np.arange(len(synth_dataset))
         if args.num_synth > 0:
-            synth_inds = np.random.choice(synth_inds, args.num_synth, replace=False)
+            synth_inds = np.arange(args.num_synth) #np.random.choice(synth_inds, args.num_synth, replace=False)
             synth_set = Subset(synth_dataset, synth_inds)
         train_set = ConcatDataset([train_set, synth_set])
 
