@@ -112,7 +112,10 @@ def get_data(
             name='gen_image', transform=test_transform
         )
         print('Using SynthText data for training')
-        synth_inds = np.arange(len(synth_dataset))
+
+        # Filter out the long labels
+        synth_label_file = pd.read_csv('data/annotation2.txt', sep='\t', header=None, na_filter=False)
+        synth_inds =  np.arange(len(synth_dataset))[(synth_label_file[1].str.len() < args.max_len)]
         if args.num_synth > 0:
             synth_inds = np.random.choice(synth_inds, args.num_synth, replace=False) # np.arange(args.num_synth)
             synth_set = Subset(synth_dataset, synth_inds)
