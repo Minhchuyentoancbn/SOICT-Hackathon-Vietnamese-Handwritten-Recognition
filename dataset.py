@@ -13,7 +13,7 @@ from torchvision import transforms
 from augmentation.blur import GaussianBlur, MotionBlur
 from augmentation.camera import Brightness, JpegCompression
 from augmentation.process import Equalize, AutoContrast, Sharpness, Color
-from utils import count_denmark
+from utils import count_denmark, count_uppercase
 
 
 class HandWrittenDataset(Dataset):
@@ -74,7 +74,8 @@ def collate_fn(batch):
     images, labels = zip(*batch)
     images = torch.stack(images, 0)
     num_marks = count_denmark(labels)
-    return images, labels, num_marks
+    num_uppercase = count_uppercase(labels)
+    return images, labels, num_marks, num_uppercase
         
 
 class ResizeNormalize(object):

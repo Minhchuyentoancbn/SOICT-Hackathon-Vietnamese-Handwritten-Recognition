@@ -58,8 +58,11 @@ def parse_arguments(argv):
     parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
 
+    # Auxiliary loss
     parser.add_argument('--count_mark', type=int, default=0, help='Whether to count mark or not, default: 0 (not count mark)')
     parser.add_argument('--mark_alpha', type=float, default=1.0, help='Alpha for mark, default: 1.0')
+    parser.add_argument('--count_case', type=int, default=0, help='Whether to count uppercase or not, default: 0 (not count mark)')
+    parser.add_argument('--case_alpha', type=float, default=1.0, help='Alpha for uppercase, default: 1.0')
 
     return parser.parse_args(argv)
 

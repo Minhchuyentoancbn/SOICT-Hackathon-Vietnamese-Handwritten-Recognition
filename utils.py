@@ -41,6 +41,29 @@ def count_denmark(text):
     return marks
 
 
+def count_uppercase(text):
+    """
+    Count the number of uppercase characters in a string.
+
+    Arguments:
+    ----------
+    text: list(str)
+        List of strings.
+
+    Returns:
+    --------
+    uppercase: torch.Tensor(N, 1)
+        The number of uppercase characters in the string.
+    """
+    N = len(text)
+    uppercase = torch.zeros(N, 1)
+    for i, t in enumerate(text):
+        for c in t:
+            if c.isupper():
+                uppercase[i, 0] += 1
+    return uppercase
+
+
 class CTCLabelConverter(object):
     """ Convert between text-label and text-index """
 

@@ -10,7 +10,7 @@ from models.feature_extraction import ResNet_FeatureExtractor, VGG_FeatureExtrac
 from models.sequence_modeling import BidirectionalLSTM
 from models.prediction import Attention
 from models.srn import Transforme_Encoder, SRN_Decoder, cal_performance
-from models.counter import MarkCounter
+from models.counter import MarkCounter, UpperCaseCounter
 from models.vitstr import create_vitstr
 from utils import Averager
 
@@ -177,14 +177,19 @@ class LightningModel(pl.LightningModule):
         self.args = args
         self.cer = CharErrorRate()
 
-        if (not args.transformer) and args.count_mark:
+        if (not args.transformer):
             if args.feature_extractor == 'densenet':
                 output_channel = 2208
             else:
                 output_channel = 512
-            self.mark_counter = MarkCounter(output_channel)
-            self.mark_crit = nn.MSELoss()
-            initialize_weights(self.mark_counter)
+            if args.count_mark:
+                self.mark_counter = MarkCounter(output_channel)
+                self.mark_crit = nn.MSELoss()
+                initialize_weights(self.mark_counter)
+            if args.count_case:
+                self.case_counter = UpperCaseCounter(output_channel)
+                self.case_crit = nn.MSELoss()
+                initialize_weights(self.case_counter)
         
         if args.focal_loss:
             reduction = 'none'
@@ -239,7 +244,7 @@ class LightningModel(pl.LightningModule):
         opt.zero_grad()
 
         # Prepare the data
-        images, labels, num_marks = batch
+        images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
         if not self.args.transformer:
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
@@ -267,10 +272,15 @@ class LightningModel(pl.LightningModule):
             p = torch.exp(-loss)
             loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * loss).mean()
 
-        if (not self.args.transformer) and self.args.count_mark:
-            mark_pred = self.mark_counter(visual_feature)
-            mark_loss = self.mark_crit(mark_pred, num_marks)
-            loss = mark_loss * self.args.mark_alpha + loss
+        if (not self.args.transformer):
+            if self.args.count_mark:
+                mark_pred = self.mark_counter(visual_feature)
+                mark_loss = self.mark_crit(mark_pred, num_marks)
+                loss = mark_loss * self.args.mark_alpha + loss
+            if self.args.count_case:
+                case_pred = self.case_counter(visual_feature)
+                case_loss = self.case_crit(case_pred, num_uppercase)
+                loss = case_loss * self.args.case_alpha + loss
 
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
         # self.loss_train_avg.add(loss.item())
@@ -297,7 +307,7 @@ class LightningModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # Prepare the data
-        images, labels, num_marks = batch
+        images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
         if self.args.transformer:
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
@@ -341,10 +351,15 @@ class LightningModel(pl.LightningModule):
             p = torch.exp(-val_loss)
             val_loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * val_loss).mean()
 
-        if (not self.args.transformer) and self.args.count_mark:
-            mark_pred = self.mark_counter(visual_feature)
-            mark_loss = self.mark_crit(mark_pred, num_marks)
-            val_loss = mark_loss * self.args.mark_alpha + val_loss
+        if (not self.args.transformer):
+            if self.args.count_mark:
+                mark_pred = self.mark_counter(visual_feature)
+                mark_loss = self.mark_crit(mark_pred, num_marks)
+                val_loss = mark_loss * self.args.mark_alpha + val_loss
+            if self.args.count_case:
+                case_pred = self.case_counter(visual_feature)
+                case_loss = self.case_crit(case_pred, num_uppercase)
+                val_loss = case_loss * self.args.case_alpha + val_loss
 
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
         self.loss_val_avg.add(val_loss.item())
