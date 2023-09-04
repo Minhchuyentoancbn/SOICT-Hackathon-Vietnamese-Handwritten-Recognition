@@ -285,7 +285,7 @@ class LightningModel(pl.LightningModule):
                 else:
                     case_loss = 0
                 if self.args.count_char:
-                    char_loss = self.char_crit(num_char_pred, length)
+                    char_loss = self.char_crit(num_char_pred, length.float())
                 else:
                     char_loss = 0
                 loss = loss + case_loss * self.args.case_alpha  + char_loss * self.args.char_alpha
