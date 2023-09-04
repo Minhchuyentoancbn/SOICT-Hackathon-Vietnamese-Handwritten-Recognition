@@ -53,6 +53,7 @@ class UpperCaseCounter(nn.Module):
         self.relu3 = nn.ReLU(inplace=True)
         self.avgpool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
         self.linear = nn.Linear(64, 1)
+        self.linear2 = nn.Linear(64, 1)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -71,5 +72,6 @@ class UpperCaseCounter(nn.Module):
 
         x = self.avgpool(x)
         x.squeeze_(3).squeeze_(2)
-        x = self.linear(x)
-        return x
+        uppercase = self.linear(x)
+        num_char = self.linear2(x)
+        return uppercase, num_char

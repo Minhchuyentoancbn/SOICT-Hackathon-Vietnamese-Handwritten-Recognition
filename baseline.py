@@ -186,9 +186,10 @@ class LightningModel(pl.LightningModule):
                 self.mark_counter = MarkCounter(output_channel)
                 self.mark_crit = nn.MSELoss()
                 initialize_weights(self.mark_counter)
-            if args.count_case:
+            if args.count_case or args.count_char:
                 self.case_counter = UpperCaseCounter(output_channel)
                 self.case_crit = nn.MSELoss()
+                self.char_crit = nn.MSELoss()
                 initialize_weights(self.case_counter)
         
         if args.focal_loss:
@@ -277,10 +278,17 @@ class LightningModel(pl.LightningModule):
                 mark_pred = self.mark_counter(visual_feature)
                 mark_loss = self.mark_crit(mark_pred, num_marks)
                 loss = mark_loss * self.args.mark_alpha + loss
-            if self.args.count_case:
-                case_pred = self.case_counter(visual_feature)
-                case_loss = self.case_crit(case_pred, num_uppercase)
-                loss = case_loss * self.args.case_alpha + loss
+            if self.args.count_case or self.args.count_char:
+                case_pred, num_char_pred = self.case_counter(visual_feature)
+                if self.args.count_case:
+                    case_loss = self.case_crit(case_pred, num_uppercase)
+                else:
+                    case_loss = 0
+                if self.args.count_char:
+                    char_loss = self.char_crit(num_char_pred, length)
+                else:
+                    char_loss = 0
+                loss = loss + case_loss * self.args.case_alpha  + char_loss * self.args.char_alpha
 
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
         # self.loss_train_avg.add(loss.item())
@@ -356,10 +364,17 @@ class LightningModel(pl.LightningModule):
                 mark_pred = self.mark_counter(visual_feature)
                 mark_loss = self.mark_crit(mark_pred, num_marks)
                 val_loss = mark_loss * self.args.mark_alpha + val_loss
-            if self.args.count_case:
-                case_pred = self.case_counter(visual_feature)
-                case_loss = self.case_crit(case_pred, num_uppercase)
-                val_loss = case_loss * self.args.case_alpha + val_loss
+            if self.args.count_case or self.args.count_char:
+                case_pred, num_char_pred = self.case_counter(visual_feature)
+                if self.args.count_case:
+                    case_loss = self.case_crit(case_pred, num_uppercase)
+                else:
+                    case_loss = 0
+                if self.args.count_char:
+                    char_loss = self.char_crit(num_char_pred, length_for_loss)
+                else:
+                    char_loss = 0
+                val_loss = val_loss + case_loss * self.args.case_alpha  + char_loss * self.args.char_alpha
 
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
         self.loss_val_avg.add(val_loss.item())

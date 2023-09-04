@@ -63,6 +63,8 @@ def parse_arguments(argv):
     parser.add_argument('--mark_alpha', type=float, default=1.0, help='Alpha for mark, default: 1.0')
     parser.add_argument('--count_case', type=int, default=0, help='Whether to count uppercase or not, default: 0 (not count mark)')
     parser.add_argument('--case_alpha', type=float, default=1.0, help='Alpha for uppercase, default: 1.0')
+    parser.add_argument('--count_char', type=int, default=0, help='Whether to count number of characters or not, default: 0 (not count number of characters)')
+    parser.add_argument('--char_alpha', type=float, default=1.0, help='Alpha for number of characters, default: 1.0')
 
     return parser.parse_args(argv)
 
