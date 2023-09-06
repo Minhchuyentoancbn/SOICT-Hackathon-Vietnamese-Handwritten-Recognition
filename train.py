@@ -79,23 +79,6 @@ def get_data(
 
     if args.train:
         # Split the training data into train and validation
-        # NOTE: Use GAN data only for training
-        form_inds = np.arange(0, 51000)
-        wild_inds = np.arange(51000, 99000)
-        gan_inds = np.arange(99000, 103000)
-        np.random.shuffle(form_inds)
-        np.random.shuffle(wild_inds)
-        train_inds = np.concatenate([
-            form_inds[5100:],
-            wild_inds[4800:],
-            gan_inds
-        ])
-        val_inds = np.concatenate([
-            form_inds[:5100],
-            wild_inds[:4800]
-        ])
-
-        # Check whether train_inds and val_inds files are present
         if os.path.exists('train_inds.pkl') and os.path.exists('val_inds.pkl'):
             # Load the indices
             with open('train_inds.pkl', 'rb') as f:
@@ -103,6 +86,22 @@ def get_data(
             with open('val_inds.pkl', 'rb') as f:
                 val_inds = pickle.load(f)
         else:
+            # NOTE: Use GAN data only for training
+            # Check whether train_inds and val_inds files are present
+            form_inds = np.arange(0, 51000)
+            wild_inds = np.arange(51000, 99000)
+            gan_inds = np.arange(99000, 103000)
+            np.random.shuffle(form_inds)
+            np.random.shuffle(wild_inds)
+            train_inds = np.concatenate([
+                form_inds[5100:],
+                wild_inds[4800:],
+                gan_inds
+            ])
+            val_inds = np.concatenate([
+                form_inds[:5100],
+                wild_inds[:4800]
+            ])
             # Save the indices for later ensemble
             with open('train_inds.pkl', 'wb') as f:
                 pickle.dump(train_inds, f)
