@@ -94,9 +94,6 @@ def get_data(
             form_inds[:5100],
             wild_inds[:4800]
         ])
-        # Sample from the training data
-        if args.num_samples > 0:
-            train_inds = np.random.choice(train_inds, args.num_samples, replace=False)
 
         # Check whether train_inds and val_inds files are present
         if os.path.exists('train_inds.pkl') and os.path.exists('val_inds.pkl'):
@@ -111,6 +108,10 @@ def get_data(
                 pickle.dump(train_inds, f)
             with open('val_inds.pkl', 'wb') as f:
                 pickle.dump(val_inds, f)
+
+        # Sample from the training data
+        if args.num_samples > 0:
+            train_inds = np.random.choice(train_inds, args.num_samples, replace=False)
 
         train_set = Subset(train_dataset, train_inds)
         val_set = Subset(val_dataset, val_inds)
