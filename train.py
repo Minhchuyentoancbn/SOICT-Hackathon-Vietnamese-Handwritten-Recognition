@@ -5,6 +5,8 @@ from torchvision import transforms
 
 import numpy as np
 import pandas as pd
+import pickle
+import os
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
 from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, make_submission
@@ -95,6 +97,20 @@ def get_data(
         # Sample from the training data
         if args.num_samples > 0:
             train_inds = np.random.choice(train_inds, args.num_samples, replace=False)
+
+        # Check whether train_inds and val_inds files are present
+        if os.path.exists('train_inds.pkl') and os.path.exists('val_inds.pkl'):
+            # Load the indices
+            with open('train_inds.pkl', 'rb') as f:
+                train_inds = pickle.load(f)
+            with open('val_inds.pkl', 'rb') as f:
+                val_inds = pickle.load(f)
+        else:
+            # Save the indices for later ensemble
+            with open('train_inds.pkl', 'wb') as f:
+                pickle.dump(train_inds, f)
+            with open('val_inds.pkl', 'wb') as f:
+                pickle.dump(val_inds, f)
 
         train_set = Subset(train_dataset, train_inds)
         val_set = Subset(val_dataset, val_inds)
