@@ -271,3 +271,13 @@ class OtsuGrayscale(object):
                 cv2.drawContours(opening, [c], -1, 0, -1)
 
         return Image.fromarray(opening)
+    
+
+class RotationTransform:
+    """Rotate by one of the given angles."""
+
+    def __init__(self, angles):
+        self.angles = angles
+
+    def __call__(self, x):
+        return transforms.functional.rotate(x, self.angles, fill=(0.5818 * 255, 0.5700 * 255, 0.5632 * 255))
