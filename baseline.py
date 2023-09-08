@@ -390,8 +390,8 @@ class LightningModel(pl.LightningModule):
             max_len = target.shape[1] - 1
             preds = self.model.forward(images, max_len)
             val_loss = self.criterion(preds.flatten(end_dim=1), target.flatten())
-            loss_numel = (target != self.model.pad_id).sum().item()
-            val_loss /= loss_numel
+            # loss_numel = (target != self.model.pad_id).sum().item()
+            # val_loss /= loss_numel
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
