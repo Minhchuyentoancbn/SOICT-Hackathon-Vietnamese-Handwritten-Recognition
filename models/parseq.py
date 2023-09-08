@@ -125,7 +125,7 @@ class PARSeq(nn.Module):
                  enc_mlp_ratio: int = 4, enc_depth: int = 12,
                  dec_num_heads: int = 12, dec_mlp_ratio: int = 4, dec_depth: int = 1,
                  perm_num: int = 6, perm_forward: bool = True, perm_mirrored: bool = True,
-                 decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1, stn_on: bool = False) -> None:
+                 decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1, stn_on: bool = False, seed: int = 42) -> None:
 
         super().__init__()
 
@@ -143,7 +143,7 @@ class PARSeq(nn.Module):
         self.decoder = Decoder(decoder_layer, num_layers=dec_depth, norm=nn.LayerNorm(embed_dim))
 
         # Perm/attn mask stuff
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(seed)
         self.max_gen_perms = perm_num // 2 if perm_mirrored else perm_num
         self.perm_forward = perm_forward
         self.perm_mirrored = perm_mirrored
