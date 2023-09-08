@@ -12,6 +12,7 @@ from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYN
 from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission
 from baseline import Model, LightningModel
 from test import predict
+from models.parseq import PARSeq
 
 
 def get_data(
@@ -182,12 +183,17 @@ def train(args):
         input_channel = 3
 
     # Get the model
-    model = Model(
-        input_channel, args.height, args.width, NUM_CLASSES,
-        args.stn_on, args.feature_extractor, args.prediction,
-        dropout=args.dropout, max_len=args.max_len, 
-        transformer=args.transformer, transformer_model=args.transformer_model,
-    )
+    if args.prediction == 'parseq':
+        model = PARSeq(
+            args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, (args.height, args.width),
+        )
+    else:
+        model = Model(
+            input_channel, args.height, args.width, NUM_CLASSES,
+            args.stn_on, args.feature_extractor, args.prediction,
+            dropout=args.dropout, max_len=args.max_len, 
+            transformer=args.transformer, transformer_model=args.transformer_model,
+        )
     pl_model = LightningModel(model, converter, args)
 
     # early_stop_callback = EarlyStopping(
