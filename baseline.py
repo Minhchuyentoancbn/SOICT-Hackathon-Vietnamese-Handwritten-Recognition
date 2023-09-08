@@ -451,6 +451,8 @@ class LightningModel(pl.LightningModule):
 
         if self.args.transformer:
             params = self.filtered_parameters
+        elif self.args.prediction == 'parseq':
+            params = self.model.parameters()
         else:
             params = self.parameters()
 
