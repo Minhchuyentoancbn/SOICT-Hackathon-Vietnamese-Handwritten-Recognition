@@ -11,6 +11,7 @@ from torch.nn.modules import transformer
 
 from timm.models.vision_transformer import VisionTransformer, PatchEmbed
 from timm.models.helpers import named_apply
+from .transformation import TPS_SpatialTransformerNetwork
 
 
 class DecoderLayer(nn.Module):
@@ -124,7 +125,7 @@ class PARSeq(nn.Module):
                  enc_mlp_ratio: int = 4, enc_depth: int = 12,
                  dec_num_heads: int = 12, dec_mlp_ratio: int = 4, dec_depth: int = 1,
                  perm_num: int = 6, perm_forward: bool = True, perm_mirrored: bool = True,
-                 decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1) -> None:
+                 decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1, stn_on: bool = False) -> None:
 
         super().__init__()
 
@@ -132,6 +133,7 @@ class PARSeq(nn.Module):
         self.bos_id = bos_id
         self.eos_id = eos_id
         self.max_label_length = max_label_length
+        self.stn_on = stn_on
         self.decode_ar = decode_ar
         self.refine_iters = refine_iters
 
@@ -159,6 +161,11 @@ class PARSeq(nn.Module):
 
         self._device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+        if self.stn_on:
+            self.transformation = TPS_SpatialTransformerNetwork(
+                20, img_size, img_size, 3
+            )
+
     @torch.jit.ignore
     def no_weight_decay(self):
         param_names = {'text_embed.embedding.weight', 'pos_queries'}
@@ -167,6 +174,8 @@ class PARSeq(nn.Module):
     
 
     def encode(self, img: torch.Tensor):
+        if self.stn_on:
+            img = self.transformation(img)
         return self.encoder(img)
     
 
