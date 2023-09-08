@@ -9,7 +9,7 @@ import pickle
 import os
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
-from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, make_submission
+from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission
 from baseline import Model, LightningModel
 from test import predict
 
@@ -171,6 +171,9 @@ def train(args):
         converter = AttnLabelConverter()
     elif args.prediction == 'srn':
         converter = SRNConverter()
+    elif args.prediction == 'parseq':
+        converter = ParseqConverter()
+        
     NUM_CLASSES = converter.num_classes
     
     if args.grayscale:
