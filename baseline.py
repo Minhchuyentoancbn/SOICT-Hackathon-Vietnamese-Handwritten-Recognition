@@ -207,6 +207,8 @@ class LightningModel(pl.LightningModule):
                 self.smoothing = '0'
             else:
                 self.smoothing = '1'
+        elif args.prediction == 'parseq':
+            self.criterion = nn.CrossEntropyLoss(ignore_index=converter.pad_id, reduction=reduction, label_smoothing=args.label_smoothing)
 
 
         # self.loss_train_avg = Averager()
@@ -247,7 +249,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if not self.args.transformer:
+        if not (self.args.transformer or self.args.prediction == 'parseq'):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
@@ -268,6 +270,34 @@ class LightningModel(pl.LightningModule):
         elif self.args.prediction == 'srn':
             preds, visual_feature = self.model(images, None)
             loss = self.criterion(preds, text, self.converter.PAD, self.smoothing)
+        elif self.args.prediction == 'parseq':
+            target = self.converter.encode(labels, batch_max_length=self.args.max_len)
+            
+            # Encode the source sequence (i.e. the image codes)
+            memory = self.model.encode(images)
+
+            # Prepare the target sequences (input and output)
+            tgt_perms = self.model.gen_tgt_perms(target)
+            tgt_in = target[:, :-1]
+            tgt_out = target[:, 1:]
+            # The [EOS] token is not depended upon by any other token in any permutation ordering
+            tgt_padding_mask = (tgt_in == self.model.pad_id) | (tgt_in == self.model.eos_id)
+
+            loss = 0
+            loss_numel = 0
+            n = (tgt_out != self.model.pad_id).sum().item()
+            for i, perm in enumerate(tgt_perms):
+                tgt_mask, query_mask = self.model.generate_attn_masks(perm)
+                out = self.model.decode(tgt_in, memory, tgt_mask, tgt_padding_mask, tgt_query_mask=query_mask)
+                preds = self.model.head(out).flatten(end_dim=1)
+                loss += n * self.criterion(preds, tgt_out.flatten())
+                loss_numel += n
+                # After the second iteration (i.e. done with canonical and reverse orderings),
+                # remove the [EOS] tokens for the succeeding perms
+                if i == 1:
+                    tgt_out = torch.where(tgt_out == self.model.eos_id, self.model.pad_id, tgt_out)
+                    n = (tgt_out != self.model.pad_id).sum().item()
+            loss /= loss_numel
 
         if self.args.focal_loss:
             p = torch.exp(-loss)
@@ -317,7 +347,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if self.args.transformer:
+        if self.args.transformer or self.args.prediction == 'parseq':
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
         else:
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
@@ -354,6 +384,17 @@ class LightningModel(pl.LightningModule):
             _, preds_index = preds[2].max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
             labels = self.converter.decode(text_for_loss, length_for_loss)
+        elif self.args.prediction == 'parseq':
+            length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
+            target = target[:, 1:]
+            max_len = target.shape[1] - 1
+            preds = self.model.forward(images, max_len)
+            val_loss = self.criterion(preds.flatten(end_dim=1), target.flatten())
+            loss_numel = (target != self.model.pad_id).sum().item()
+            val_loss /= loss_numel
+            _, preds_index = preds.max(2)
+            preds_str = self.converter.decode(preds_index, length_for_pred)
+
 
         if self.args.focal_loss:
             p = torch.exp(-val_loss)
