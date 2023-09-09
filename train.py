@@ -136,6 +136,8 @@ def get_data(
         if args.num_synth > 0:
             synth_inds = np.random.choice(synth_inds, args.num_synth, replace=False) # np.arange(args.num_synth)
             synth_set = Subset(synth_dataset, synth_inds)
+        else:
+            synth_set = synth_dataset
         train_set = ConcatDataset([train_set, synth_set])
 
     # Set up the data loaders
