@@ -187,9 +187,17 @@ def train(args):
 
     # Get the model
     if args.prediction == 'parseq':
+        if args.parseq_model == 'small':
+            embed_dim = 384
+            num_heads = 6
+        elif args.parseq_model == 'base':
+            embed_dim = 768
+            num_heads = 12
+
         model = PARSeq(
             args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
             (args.height, args.width), stn_on=args.stn_on, seed=args.seed, img_channel=input_channel,
+            embed_dim=embed_dim, enc_num_heads=num_heads,
         )
     else:
         model = Model(
