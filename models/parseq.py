@@ -119,7 +119,7 @@ class TokenEmbedding(nn.Module):
 class PARSeq(nn.Module):
 
     def __init__(self, max_label_length: int, num_classes: int, pad_id: int, bos_id: int, eos_id: int,
-                 img_size: Sequence[int], patch_size: Sequence[int] = (4, 8), 
+                 img_size: Sequence[int], img_channel: int = 3, patch_size: Sequence[int] = (4, 8), 
                  embed_dim: int = 384,
                  enc_num_heads: int = 6, 
                  enc_mlp_ratio: int = 4, enc_depth: int = 12,
@@ -138,7 +138,7 @@ class PARSeq(nn.Module):
         self.refine_iters = refine_iters
 
         self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
-                               mlp_ratio=enc_mlp_ratio)
+                               mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
         decoder_layer = DecoderLayer(embed_dim, dec_num_heads, embed_dim * dec_mlp_ratio, dropout)
         self.decoder = Decoder(decoder_layer, num_layers=dec_depth, norm=nn.LayerNorm(embed_dim))
 
@@ -163,7 +163,7 @@ class PARSeq(nn.Module):
 
         if self.stn_on:
             self.transformation = TPS_SpatialTransformerNetwork(
-                20, img_size, img_size, 3
+                20, img_size, img_size, img_channel
             )
 
     @torch.jit.ignore

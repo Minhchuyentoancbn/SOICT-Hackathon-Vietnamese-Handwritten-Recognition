@@ -189,7 +189,7 @@ def train(args):
     if args.prediction == 'parseq':
         model = PARSeq(
             args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
-            (args.height, args.width), stn_on=args.stn_on, seed=args.seed,
+            (args.height, args.width), stn_on=args.stn_on, seed=args.seed, img_channel=input_channel,
         )
     else:
         model = Model(
