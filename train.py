@@ -2,11 +2,13 @@ import torch
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Subset, ConcatDataset
 from torchvision import transforms
+from pytorch_lightning.callbacks import StochasticWeightAveraging
 
 import numpy as np
 import pandas as pd
 import pickle
 import os
+import math
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
 from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission
@@ -240,12 +242,22 @@ def train_model(pl_model, train_loader, val_loader, args):
         The arguments of the program
     """
     # train model
+    if args.swa:
+        # Use stochastic weight averaging
+        swa_epoch_start = 0.75
+        swa_lr = args.lr * get_swa_lr_factor(0.075, swa_epoch_start)
+        swa = StochasticWeightAveraging(swa_lr, swa_epoch_start)
+        callbacks = [swa, ]
+    else:
+        callbacks = None
+
     if args.train:
         # train model
         trainer = pl.Trainer(
             default_root_dir=f'checkpoints/{args.model_name}/',
             max_epochs=args.epochs,
             val_check_interval=args.val_check_interval,
+            callbacks=callbacks
         )
         trainer.fit(
             model=pl_model, train_dataloaders=train_loader, val_dataloaders=val_loader
@@ -255,9 +267,27 @@ def train_model(pl_model, train_loader, val_loader, args):
         trainer = pl.Trainer(
             default_root_dir=f'checkpoints/{args.model_name}/',
             max_epochs=args.epochs,
+            callbacks=callbacks
         )
         trainer.fit(
             model=pl_model, train_dataloaders=train_loader
         )
 
     return pl_model
+
+
+# Copied from OneCycleLR
+def _annealing_cos(start, end, pct):
+    "Cosine anneal from `start` to `end` as pct goes from 0.0 to 1.0."
+    cos_out = math.cos(math.pi * pct) + 1
+    return end + (start - end) / 2.0 * cos_out
+
+
+def get_swa_lr_factor(warmup_pct, swa_epoch_start, div_factor=25, final_div_factor=1e4) -> float:
+    """Get the SWA LR factor for the given `swa_epoch_start`. Assumes OneCycleLR Scheduler."""
+    total_steps = 1000  # Can be anything. We use 1000 for convenience.
+    start_step = int(total_steps * warmup_pct) - 1
+    end_step = total_steps - 1
+    step_num = int(total_steps * swa_epoch_start) - 1
+    pct = (step_num - start_step) / (end_step - start_step)
+    return _annealing_cos(1, 1 / (div_factor * final_div_factor), pct)
