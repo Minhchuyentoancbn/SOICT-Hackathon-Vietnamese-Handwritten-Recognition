@@ -13,6 +13,7 @@ from models.srn import Transforme_Encoder, SRN_Decoder, cal_performance
 from models.counter import MarkCounter, UpperCaseCounter
 from models.vitstr import create_vitstr
 from utils import Averager
+from timm.optim import create_optimizer_v2
 
 
 class Model(nn.Module):
@@ -444,34 +445,40 @@ class LightningModel(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        optimizer_params = {
-            'lr': self.args.lr,
-            'weight_decay': self.args.weight_decay
-        }
+        if not self.args.timm_optim:
+            optimizer_params = {
+                'lr': self.args.lr,
+                'weight_decay': self.args.weight_decay
+            }
 
-        if self.args.transformer:
-            params = self.filtered_parameters
-        elif self.args.prediction == 'parseq':
-            params = self.model.parameters()
+            if self.args.transformer:
+                params = self.filtered_parameters
+            elif self.args.prediction == 'parseq':
+                params = self.model.parameters()
+            else:
+                params = self.parameters()
+
+            if self.args.optim == 'adam':
+                optimizer = torch.optim.Adam(
+                    params, betas=(self.args.momentum, 0.999), **optimizer_params
+                )
+            elif self.args.optim == 'sgd':
+                optimizer = torch.optim.SGD(
+                    params, momentum=self.args.momentum, **optimizer_params
+                )
+            elif self.args.optim == 'adamw':
+                optimizer = torch.optim.AdamW(
+                    params, betas=(self.args.momentum, 0.999), **optimizer_params
+                )
+            elif self.args.optim == 'adadelta':
+                optimizer = torch.optim.Adadelta(
+                    params, **optimizer_params, eps=1e-8, rho=0.95
+                )
         else:
-            params = self.parameters()
-
-        if self.args.optim == 'adam':
-            optimizer = torch.optim.Adam(
-                params, betas=(self.args.momentum, 0.999), **optimizer_params
-            )
-        elif self.args.optim == 'sgd':
-            optimizer = torch.optim.SGD(
-                params, momentum=self.args.momentum, **optimizer_params
-            )
-        elif self.args.optim == 'adamw':
-            optimizer = torch.optim.AdamW(
-                params, betas=(self.args.momentum, 0.999), **optimizer_params
-            )
-        elif self.args.optim == 'adadelta':
-            optimizer = torch.optim.Adadelta(
-                params, **optimizer_params, eps=1e-8, rho=0.95
-            )
+            optimizer = create_optimizer_v2(self.model, self.args.optim, 
+                                            lr=self.args.lr, weight_decay=self.args.weight_decay,
+                                            momentum=self.args.momentum
+                                            )
 
         # Learning rate scheduler
         if self.args.scheduler:
