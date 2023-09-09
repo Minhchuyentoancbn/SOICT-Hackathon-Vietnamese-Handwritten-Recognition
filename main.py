@@ -32,6 +32,7 @@ def parse_arguments(argv):
     parser.add_argument('--scheduler', type=int, default=0, help='Whether to use learning rate scheduler or not, default: 0 (not use scheduler)')
     parser.add_argument('--decay_epochs', type=int, nargs='+', default=[1, ], help='Decay learning rate after this number of epochs, default: 0')
     parser.add_argument('--decay_rate', type=float, default=0.1, help='Decay rate for learning rate scheduler, default: 0.1')
+    parser.add_argument('--one_cycle', type=int, default=0, help='Whether to use one cycle policy or not, default: 0 (not use one cycle policy)')
 
     # Data processing
     parser.add_argument('--train', type=int, default=1, help='Whether to use all training data or not, default: 1 (not use all training data)')

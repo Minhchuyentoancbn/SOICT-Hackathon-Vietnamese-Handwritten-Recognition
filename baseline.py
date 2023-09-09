@@ -485,9 +485,15 @@ class LightningModel(pl.LightningModule):
             # scheduler = optim.lr_scheduler.CosineAnnealingLR(
             #     optimizer, T_max=self.num_iter
             # )
-            scheduler = optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=self.num_iter, gamma=self.args.decay_rate
-            )
+            if self.args.one_cycle:
+                scheduler = optim.lr_scheduler.OneCycleLR(
+                    optimizer, max_lr=self.args.lr, total_steps=self.trainer.estimated_stepping_batches, 
+                    pct_start=0.075, cycle_momentum=False
+                )
+            else:
+                scheduler = optim.lr_scheduler.MultiStepLR(
+                    optimizer, milestones=self.num_iter, gamma=self.args.decay_rate
+                )
             return [optimizer, ], [scheduler, ]
 
         return optimizer
