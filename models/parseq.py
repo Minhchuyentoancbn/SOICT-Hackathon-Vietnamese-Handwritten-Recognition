@@ -21,6 +21,7 @@ _logger = logging.getLogger(__name__)
 
 __all__ = [
     'parseq_small_patch16_224',
+    'parseq_base_patch16_224',
 ]
 
 
@@ -165,7 +166,10 @@ class PARSeq(nn.Module):
         self.trasformer = transformer
         if transformer:
             if pretrained:
-                self.encoder = parseq_small_patch16_224(pretrained=True)
+                if embed_dim == 384:  # small
+                    self.encoder = parseq_small_patch16_224(pretrained=True)
+                elif embed_dim == 768:  # base
+                    self.encoder = parseq_base_patch16_224(pretrained=True)
             else:
                 self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
                                        mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
@@ -476,6 +480,21 @@ def parseq_small_patch16_224(pretrained=False, **kwargs):
     model.default_cfg = _cfg(
             #url="https://github.com/roatienza/public/releases/download/v0.1-deit-small/deit_small_patch16_224-cd65a155.pth"
             url="https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth"
+    )
+    if pretrained:
+        load_pretrained(
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 1), filter_fn=_conv_filter)
+    return model
+
+
+@register_model
+def parseq_base_patch16_224(pretrained=False, **kwargs):
+    kwargs['in_chans'] = 1
+    model = Encoder(
+        patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, **kwargs)
+    model.default_cfg = _cfg(
+            #url='https://github.com/roatienza/public/releases/download/v0.1-deit-base/deit_base_patch16_224-b5f2ef4d.pth'
+            url='https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth'
     )
     if pretrained:
         load_pretrained(
