@@ -405,9 +405,7 @@ class LightningModel(pl.LightningModule):
             p = torch.exp(-val_loss)
             val_loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * val_loss).mean()
 
-        if (not self.args.transformer):
-            if (self.args.count_mark or self.args.count_case or self.args.count_char) and self.args.prediction == 'parseq' and (not self.args.parseq_use_transformer):
-                visual_feature = self.model.get_visual_features(images)
+        if (not self.args.transformer) and self.args.prediction != 'parseq':
             if self.args.count_mark:
                 mark_pred = self.mark_counter(visual_feature)
                 mark_loss = self.mark_crit(mark_pred, num_marks)
