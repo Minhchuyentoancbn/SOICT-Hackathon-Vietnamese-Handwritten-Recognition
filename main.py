@@ -57,6 +57,7 @@ def parse_arguments(argv):
     parser.add_argument('--transformer_model', type=str, default=choices[0], help='VitSTR model, default: vitstr_tiny_patch16_224, options: vitstr_tiny_patch16_224, vitstr_small_patch16_224, vitstr_base_patch16_224')
 
     # Parseq
+    parser.add_argument('--parseq_use_transformer', type=int, default=0, help='Whether to use transformer or not, default: 0 (not use transformer)')
     parser.add_argument('--parseq_model', type=str, default='small', help='Parseq model, default: small, options: small, base')
     parser.add_argument('--parseq_pretrained', type=int, default=0, help='Whether to use pretrained Parseq or not, default: 0 (not use pretrained Parseq)')
     parser.add_argument('--patch_size', type=int, nargs='+', default=[4, 8], help='Patch size for Parseq, default: [4, 8]')

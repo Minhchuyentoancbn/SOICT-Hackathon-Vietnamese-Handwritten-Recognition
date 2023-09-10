@@ -13,6 +13,7 @@ import torch.utils.model_zoo as model_zoo
 from timm.models.vision_transformer import VisionTransformer, PatchEmbed, _cfg
 from timm.models.helpers import named_apply
 from .transformation import TPS_SpatialTransformerNetwork
+from .feature_extraction import ResNet_FeatureExtractor
 from timm.models.registry import register_model
 import logging
 
@@ -125,6 +126,19 @@ class TokenEmbedding(nn.Module):
         return math.sqrt(self.embed_dim) * self.embedding(tokens)
     
 
+class ResnetEncoder(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.resnet = ResNet_FeatureExtractor(in_channels, out_channels)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
+
+    def forward(self, x):
+        x = self.resnet(x)
+        x = self.adaptive_pool(x.permute(0, 3, 1, 2))
+        x = x.squeeze(3)
+        return x
+    
+
 class PARSeq(nn.Module):
 
     def __init__(self, max_label_length: int, num_classes: int, pad_id: int, bos_id: int, eos_id: int,
@@ -135,7 +149,8 @@ class PARSeq(nn.Module):
                  dec_num_heads: int = 12, dec_mlp_ratio: int = 4, dec_depth: int = 1,
                  perm_num: int = 6, perm_forward: bool = True, perm_mirrored: bool = True,
                  decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1, stn_on: bool = False, 
-                 pretrained: bool = False, seed: int = 42) -> None:
+                 pretrained: bool = False, seed: int = 42, transformer: bool = True
+                 ) -> None:
 
         super().__init__()
 
@@ -147,11 +162,16 @@ class PARSeq(nn.Module):
         self.decode_ar = decode_ar
         self.refine_iters = refine_iters
 
-        if pretrained:
-            self.encoder = parseq_small_patch16_224(pretrained=True)
+        self.trasformer = transformer
+        if transformer:
+            if pretrained:
+                self.encoder = parseq_small_patch16_224(pretrained=True)
+            else:
+                self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
+                                    mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
         else:
-            self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
-                                mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
+            self.encoder = ResnetEncoder(img_channel, embed_dim)
+        
         decoder_layer = DecoderLayer(embed_dim, dec_num_heads, embed_dim * dec_mlp_ratio, dropout)
         self.decoder = Decoder(decoder_layer, num_layers=dec_depth, norm=nn.LayerNorm(embed_dim))
 
@@ -182,8 +202,11 @@ class PARSeq(nn.Module):
     @torch.jit.ignore
     def no_weight_decay(self):
         param_names = {'text_embed.embedding.weight', 'pos_queries'}
-        enc_param_names = {'encoder.' + n for n in self.encoder.no_weight_decay()}
-        return param_names.union(enc_param_names)
+        try:
+            enc_param_names = {'encoder.' + n for n in self.encoder.no_weight_decay()}
+            return param_names.union(enc_param_names)
+        except:
+            return param_names
     
 
     def encode(self, img: torch.Tensor):
