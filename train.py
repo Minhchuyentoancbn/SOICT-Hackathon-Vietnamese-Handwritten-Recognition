@@ -45,19 +45,15 @@ def get_data(
     np.random.seed(seed)
     
     data_augment = DataAugment(prob=args.augment_prob)
-    if args.transformer or args.parseq_pretrained:
-        not_scale = True
-    else:
-        not_scale = False
     if args.grayscale:
         if args.otsu:
             grayscale = OtsuGrayscale()
         else:
             grayscale = transforms.Grayscale()
-        align = Align(1, args.height, args.width, args.keep_ratio_with_pad, not_scale)  # 1 channel for grayscale
+        align = Align(1, args.height, args.width, args.keep_ratio_with_pad, args.transformer)  # 1 channel for grayscale
     else:
         grayscale = transforms.Compose([])  # Do nothing
-        align = Align(3, args.height, args.width, args.keep_ratio_with_pad, not_scale)
+        align = Align(3, args.height, args.width, args.keep_ratio_with_pad, args.transformer)
     
     train_transform = transforms.Compose([
         # Random Rotation
