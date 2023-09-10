@@ -183,6 +183,8 @@ class LightningModel(pl.LightningModule):
                 output_channel = 2208
             else:
                 output_channel = 512
+            if args.prediction == 'parseq':
+                output_channel = 384
             if args.count_mark:
                 self.mark_counter = MarkCounter(output_channel)
                 self.mark_crit = nn.MSELoss()
