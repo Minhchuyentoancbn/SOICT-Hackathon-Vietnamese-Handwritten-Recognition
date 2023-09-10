@@ -194,9 +194,6 @@ def train(args):
             embed_dim = 768
             num_heads = 12
 
-        if not args.parseq_use_transformer:
-            embed_dim = 512
-
         model = PARSeq(
             args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
             (args.height, args.width), stn_on=args.stn_on, seed=args.seed, img_channel=input_channel,
