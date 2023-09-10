@@ -58,6 +58,7 @@ def parse_arguments(argv):
 
     # Parseq
     parser.add_argument('--parseq_model', type=str, default='small', help='Parseq model, default: small, options: small, base')
+    parser.add_argument('--parseq_pretrained', type=int, default=0, help='Whether to use pretrained Parseq or not, default: 0 (not use pretrained Parseq)')
     parser.add_argument('--patch_size', type=int, nargs='+', default=[4, 8], help='Patch size for Parseq, default: [4, 8]')
     parser.add_argument('--refine_iters', type=int, default=1, help='Number of refinement iterations, default: 1')
 

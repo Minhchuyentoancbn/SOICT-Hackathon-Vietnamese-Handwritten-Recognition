@@ -8,10 +8,19 @@ import torch
 from torch import nn as nn, Tensor
 from torch.nn import functional as F
 from torch.nn.modules import transformer
+import torch.utils.model_zoo as model_zoo
 
-from timm.models.vision_transformer import VisionTransformer, PatchEmbed
+from timm.models.vision_transformer import VisionTransformer, PatchEmbed, _cfg
 from timm.models.helpers import named_apply
 from .transformation import TPS_SpatialTransformerNetwork
+from timm.models.registry import register_model
+import logging
+
+_logger = logging.getLogger(__name__)
+
+__all__ = [
+    'parseq_small_patch16_224',
+]
 
 
 class DecoderLayer(nn.Module):
@@ -125,7 +134,8 @@ class PARSeq(nn.Module):
                  enc_mlp_ratio: int = 4, enc_depth: int = 12,
                  dec_num_heads: int = 12, dec_mlp_ratio: int = 4, dec_depth: int = 1,
                  perm_num: int = 6, perm_forward: bool = True, perm_mirrored: bool = True,
-                 decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1, stn_on: bool = False, seed: int = 42) -> None:
+                 decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1, stn_on: bool = False, 
+                 pretrained: bool = False, seed: int = 42) -> None:
 
         super().__init__()
 
@@ -137,8 +147,11 @@ class PARSeq(nn.Module):
         self.decode_ar = decode_ar
         self.refine_iters = refine_iters
 
-        self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
-                               mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
+        if pretrained:
+            self.encoder = parseq_small_patch16_224(pretrained=True)
+        else:
+            self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
+                                mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
         decoder_layer = DecoderLayer(embed_dim, dec_num_heads, embed_dim * dec_mlp_ratio, dropout)
         self.decoder = Decoder(decoder_layer, num_layers=dec_depth, norm=nn.LayerNorm(embed_dim))
 
@@ -347,3 +360,91 @@ def init_weights(module: nn.Module, name: str = '', exclude: Sequence[str] = ())
     elif isinstance(module, (nn.LayerNorm, nn.BatchNorm2d, nn.GroupNorm)):
         nn.init.ones_(module.weight)
         nn.init.zeros_(module.bias)
+
+
+def load_pretrained(model, cfg=None, num_classes=1000, in_chans=1, filter_fn=None, strict=True):
+    '''
+    Loads a pretrained checkpoint
+    From an older version of timm
+    '''
+    if cfg is None:
+        cfg = getattr(model, 'default_cfg')
+    if cfg is None or 'url' not in cfg or not cfg['url']:
+        _logger.warning("Pretrained model URL is invalid, using random initialization.")
+        return
+
+    state_dict = model_zoo.load_url(cfg['url'], progress=True, map_location='cpu')
+    if "model" in state_dict.keys():
+        state_dict = state_dict["model"]
+
+    if filter_fn is not None:
+        state_dict = filter_fn(state_dict)
+
+    if in_chans == 1:
+        conv1_name = cfg['first_conv']
+        _logger.info('Converting first conv (%s) pretrained weights from 3 to 1 channel' % conv1_name)
+        key = conv1_name + '.weight'
+        if key in state_dict.keys():
+            _logger.info('(%s) key found in state_dict' % key)
+            conv1_weight = state_dict[conv1_name + '.weight']
+        else:
+            _logger.info('(%s) key NOT found in state_dict' % key)
+            return
+        # Some weights are in torch.half, ensure it's float for sum on CPU
+        conv1_type = conv1_weight.dtype
+        conv1_weight = conv1_weight.float()
+        O, I, J, K = conv1_weight.shape
+        if I > 3:
+            assert conv1_weight.shape[1] % 3 == 0
+            # For models with space2depth stems
+            conv1_weight = conv1_weight.reshape(O, I // 3, 3, J, K)
+            conv1_weight = conv1_weight.sum(dim=2, keepdim=False)
+        else:
+            conv1_weight = conv1_weight.sum(dim=1, keepdim=True)
+        conv1_weight = conv1_weight.to(conv1_type)
+        state_dict[conv1_name + '.weight'] = conv1_weight
+
+    classifier_name = cfg['classifier']
+    if num_classes == 1000 and cfg['num_classes'] == 1001:
+        # special case for imagenet trained models with extra background class in pretrained weights
+        classifier_weight = state_dict[classifier_name + '.weight']
+        state_dict[classifier_name + '.weight'] = classifier_weight[1:]
+        classifier_bias = state_dict[classifier_name + '.bias']
+        state_dict[classifier_name + '.bias'] = classifier_bias[1:]
+    elif num_classes != cfg['num_classes']:
+        # completely discard fully connected for all other differences between pretrained and created model
+        del state_dict[classifier_name + '.weight']
+        del state_dict[classifier_name + '.bias']
+        strict = False
+
+    # Delete position embedding
+    if 'pos_embed' in state_dict.keys():
+        del state_dict['pos_embed']
+
+    print("Loading pre-trained vision transformer weights from %s ..." % cfg['url'])
+    model.load_state_dict(state_dict, strict=strict)
+
+
+def _conv_filter(state_dict, patch_size=16):
+    """ convert patch embedding weight from manual patchify + linear proj to conv"""
+    out_dict = {}
+    for k, v in state_dict.items():
+        if 'patch_embed.proj.weight' in k:
+            v = v.reshape((v.shape[0], 3, patch_size, patch_size))
+        out_dict[k] = v
+    return out_dict
+
+
+@register_model
+def parseq_small_patch16_224(pretrained=False, **kwargs):
+    kwargs['in_chans'] = 1
+    model = Encoder(
+        patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, **kwargs)
+    model.default_cfg = _cfg(
+            #url="https://github.com/roatienza/public/releases/download/v0.1-deit-small/deit_small_patch16_224-cd65a155.pth"
+            url="https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth"
+    )
+    if pretrained:
+        load_pretrained(
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 1), filter_fn=_conv_filter)
+    return model
