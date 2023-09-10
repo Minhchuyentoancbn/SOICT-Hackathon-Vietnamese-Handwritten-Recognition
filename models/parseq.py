@@ -189,7 +189,10 @@ class PARSeq(nn.Module):
         self.pos_queries = nn.Parameter(torch.Tensor(1, max_label_length + 1, embed_dim))
         self.dropout = nn.Dropout(p=dropout)
         # Encoder has its own init.
-        named_apply(partial(init_weights, exclude=['encoder']), self)
+        if transformer:
+            named_apply(partial(init_weights, exclude=['encoder']), self)
+        else:
+            named_apply(init_weights, self)
         nn.init.trunc_normal_(self.pos_queries, std=.02)
 
         self._device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
