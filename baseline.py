@@ -277,7 +277,7 @@ class LightningModel(pl.LightningModule):
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
             
             # Encode the source sequence (i.e. the image codes)
-            visual_feature = self.model.encode(images)
+            memory = self.model.encode(images)
 
             # Prepare the target sequences (input and output)
             tgt_perms = self.model.gen_tgt_perms(target)
@@ -291,7 +291,7 @@ class LightningModel(pl.LightningModule):
             n = (tgt_out != self.model.pad_id).sum().item()
             for i, perm in enumerate(tgt_perms):
                 tgt_mask, query_mask = self.model.generate_attn_masks(perm)
-                out = self.model.decode(tgt_in, visual_feature, tgt_mask, tgt_padding_mask, tgt_query_mask=query_mask)
+                out = self.model.decode(tgt_in, memory, tgt_mask, tgt_padding_mask, tgt_query_mask=query_mask)
                 preds = self.model.head(out).flatten(end_dim=1)
                 loss += n * self.criterion(preds, tgt_out.flatten())
                 loss_numel += n
@@ -307,6 +307,8 @@ class LightningModel(pl.LightningModule):
             loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * loss).mean()
 
         if (not self.args.transformer):
+            if (self.args.count_mark or self.args.count_case or self.args.count_char) and self.args.prediction == 'parseq' and (not self.args.parseq_use_transformer):
+                visual_feature = self.model.get_visual_features(images)
             if self.args.count_mark:
                 mark_pred = self.mark_counter(visual_feature)
                 mark_loss = self.mark_crit(mark_pred, num_marks)
@@ -405,7 +407,7 @@ class LightningModel(pl.LightningModule):
 
         if (not self.args.transformer):
             if (self.args.count_mark or self.args.count_case or self.args.count_char) and self.args.prediction == 'parseq' and (not self.args.parseq_use_transformer):
-                visual_feature = self.model.encode(images)
+                visual_feature = self.model.get_visual_features(images)
             if self.args.count_mark:
                 mark_pred = self.mark_counter(visual_feature)
                 mark_loss = self.mark_crit(mark_pred, num_marks)

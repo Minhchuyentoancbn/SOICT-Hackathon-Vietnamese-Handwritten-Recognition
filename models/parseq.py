@@ -168,7 +168,7 @@ class PARSeq(nn.Module):
                 self.encoder = parseq_small_patch16_224(pretrained=True)
             else:
                 self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
-                                    mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
+                                       mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
         else:
             self.encoder = ResnetEncoder(img_channel, embed_dim)
         
@@ -213,6 +213,13 @@ class PARSeq(nn.Module):
         if self.stn_on:
             img = self.transformation(img)
         return self.encoder(img)
+    
+
+    def get_visual_features(self, img: torch.Tensor):
+        assert not self.trasformer, "Only available for ResnetEncoder"
+        if self.stn_on:
+            img = self.transformation(img)
+        return self.encoder.resnet(img)
     
 
     def decode(self, tgt: torch.Tensor, memory: torch.Tensor, tgt_mask: Optional[Tensor] = None,
