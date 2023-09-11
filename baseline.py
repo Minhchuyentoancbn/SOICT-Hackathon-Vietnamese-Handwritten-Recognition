@@ -12,7 +12,6 @@ from models.prediction import Attention
 from models.srn import Transforme_Encoder, SRN_Decoder, cal_performance
 from models.counter import MarkCounter, UpperCaseCounter
 from models.vitstr import create_vitstr
-from utils import Averager
 from timm.optim import create_optimizer_v2
 
 
@@ -519,3 +518,26 @@ def initialize_weights(model):
             if 'weight' in name:
                 param.data.fill_(1)
             continue
+
+
+class Averager(object):
+    """Compute average for torch.Tensor, used for loss average."""
+
+    def __init__(self):
+        self.reset()
+
+    def add(self, v):
+        # count = v.data.numel()
+        # v = v.data.sum()
+        self.n_count += 1#count
+        self.sum += v
+
+    def reset(self):
+        self.n_count = 0
+        self.sum = 0
+
+    def val(self):
+        res = 0
+        if self.n_count != 0:
+            res = self.sum / float(self.n_count)
+        return res

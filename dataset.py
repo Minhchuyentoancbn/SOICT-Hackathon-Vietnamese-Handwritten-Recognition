@@ -13,7 +13,6 @@ from torchvision import transforms
 from augmentation.blur import GaussianBlur, MotionBlur
 from augmentation.camera import Brightness, JpegCompression
 from augmentation.process import Equalize, AutoContrast, Sharpness, Color
-from utils import count_denmark, count_uppercase
 
 
 class HandWrittenDataset(Dataset):
@@ -281,3 +280,64 @@ class RotationTransform:
 
     def __call__(self, x):
         return transforms.functional.rotate(x, self.angles, fill=(0.5818 * 255, 0.5700 * 255, 0.5632 * 255))
+    
+
+
+def count_denmark(text):
+    """
+    Count the number for each type of denmark in a string.
+
+    Arguments:
+    ----------
+    text: list(str)
+        List of strings.
+
+    Returns:
+    --------
+    marks: torch.Tensor(N, 5)
+        The number of each type of denmark in the string.
+    """
+    sac = list('ÁÉÍÓÚÝáéíóúýẤấẮắẾếỐốỚớỨứ')
+    huy = list('ÀÈÌÒÙỲàèìòùỳẦầẰằỀềỒồỜờỪừ')
+    nga = list('ÃẼĨÕŨỸãẽĩõũỹẪẫẴẵỄễỖỗỠỡỮữ')
+    nan = list('ẠẸỊỌỤỴạẹịọụỵẬậẶặỆệỘộỢợỰự')
+    hoi = list('ẢẺỈỎỦỶảẻỉỏủỷẨẩẲẳỂểỔổỞởỬử')
+
+    N = len(text)
+    marks = torch.zeros(N, 5)
+    for i, t in enumerate(text):
+        for c in t:
+            if c in sac:
+                marks[i, 0] += 1
+            elif c in huy:
+                marks[i, 1] += 1
+            elif c in nga:
+                marks[i, 2] += 1
+            elif c in nan:
+                marks[i, 3] += 1
+            elif c in hoi:
+                marks[i, 4] += 1
+    return marks
+
+
+def count_uppercase(text):
+    """
+    Count the number of uppercase characters in a string.
+
+    Arguments:
+    ----------
+    text: list(str)
+        List of strings.
+
+    Returns:
+    --------
+    uppercase: torch.Tensor(N, 1)
+        The number of uppercase characters in the string.
+    """
+    N = len(text)
+    uppercase = torch.zeros(N, 1)
+    for i, t in enumerate(text):
+        for c in t:
+            if c.isupper():
+                uppercase[i, 0] += 1
+    return uppercase
