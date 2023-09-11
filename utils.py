@@ -391,7 +391,7 @@ def read_scripts(name):
     with open(f'scripts/{name}.sh') as f:
         lines = f.readlines()
         command = ' '.join([line.strip() for line in lines]).replace('\\ ', '')[16:]
-        command = command.replace('--train 0', '')  # For model that use full dataset
+        command = command.replace('--synth 1', '')  # For model that use synth data
         command = command.strip()
     return command
 
