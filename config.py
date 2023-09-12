@@ -6,10 +6,6 @@ SYNTH_LABEL_FILE = 'data/annotation2.txt'
 # SYNTH_TRAIN_DIR = 'data/synthesis/'  # SynthText
 
 # For Kaggle
-# PUBLIC_TEST_DIR = '/kaggle/input/ocr-v3/public_test_data/new_public_test'
-# TRAIN_DIR = '/kaggle/input/ocr-v3/training_data/new_train'
-# SYNTH_TRAIN_DIR = '/kaggle/input/ocr-v3/synthesis/synthesis'
-
-TRAIN_DIR = '/kaggle/input/ocr-denoised/denoised_new_train'
-PUBLIC_TEST_DIR = '/kaggle/input/ocr-denoised/denoised_public_test'
-SYNTH_TRAIN_DIR = '/kaggle/input/ocr-denoised/denoised_synthesis'
+PUBLIC_TEST_DIR = '/kaggle/input/ocr-v3/public_test_data/new_public_test'
+TRAIN_DIR = '/kaggle/input/ocr-v3/training_data/new_train'
+SYNTH_TRAIN_DIR = '/kaggle/input/ocr-v3/synthesis/synthesis'
