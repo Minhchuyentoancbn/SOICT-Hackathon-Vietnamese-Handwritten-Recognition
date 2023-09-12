@@ -57,7 +57,7 @@ def get_data(
     
     train_transform = transforms.Compose([
         # Random Rotation
-        transforms.RandomRotation(15, fill=(0.5818 * 255, 0.5700 * 255, 0.5632 * 255)),
+        transforms.RandomRotation(15),
         data_augment,
         grayscale,
         align
