@@ -475,6 +475,7 @@ def predict_train_valid(model, converter, data_loader, args):
     device = get_device()
     preds_lst = []
     reals_lst = []
+    img_lst = []
     cer_lst = []
     confidences = []
     max_length = args.max_len
@@ -541,5 +542,6 @@ def predict_train_valid(model, converter, data_loader, args):
                 preds_lst.append(pred)
                 reals_lst.append(gt)
                 cer_lst.append(cer([pred], [gt]).item())
+                img_lst.append(images[i].cpu().numpy().transpose(1, 2, 0))
 
-    return preds_lst, reals_lst, cer_lst, confidences
+    return preds_lst, reals_lst, cer_lst, confidences, img_lst
