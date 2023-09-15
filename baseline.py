@@ -65,6 +65,7 @@ class Model(nn.Module):
         self.predict_method = prediction
         self.max_len = max_len
 
+        # Transformation
         if stn_on:
             self.tps = TPS_SpatialTransformerNetwork(
                 20, (img_height, img_width), (img_height, img_width), img_channel
@@ -72,30 +73,33 @@ class Model(nn.Module):
         else:
             self.tps = nn.Identity()
 
+        # For ViTSTR
         self.transformer = transformer
         if transformer:
             self.vitstr = create_vitstr(num_class, model=transformer_model)
             return
 
+        # Feature extraction
         if feature_extractor == 'resnet':
             self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
         elif feature_extractor == 'vgg':
             self.feature_extractor = VGG_FeatureExtractor(img_channel, 512)
         elif feature_extractor == 'densenet':
             self.feature_extractor = DenseNet_FeatureExtractor(img_channel)
-        
+    
         if feature_extractor == 'densenet':
             output_channel = 2208
         else:
             output_channel = 512
 
+        # Dropout and adaptive pooling after feature extraction
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
         else:
             self.dropout = nn.Identity()
-
         self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
 
+        # Sequence modeling
         if prediction == 'srn':
             self.sequence_modeling = Transforme_Encoder(output_channel, n_position=img_width // 4 + 1)
         else:
@@ -104,6 +108,7 @@ class Model(nn.Module):
                 BidirectionalLSTM(256, 256, 256)
             )
 
+        # Prediction
         if prediction == 'ctc':
             self.prediction = nn.Linear(256, num_class)
         elif prediction == 'attention':
@@ -125,8 +130,9 @@ class Model(nn.Module):
         # Transformation
         if seqlen is None:
             seqlen = self.max_len
-
         images = self.tps(images)
+
+        # For ViTSTR
         if self.transformer:
             prediction = self.vitstr(images, seqlen=seqlen)
             return prediction
@@ -177,6 +183,7 @@ class LightningModel(pl.LightningModule):
         self.args = args
         self.cer = CharErrorRate()
 
+        # Additonal modules for counting diacritics, uppercase letters, and characters
         if (not args.transformer):
             if args.feature_extractor == 'densenet':
                 output_channel = 2208
@@ -194,11 +201,13 @@ class LightningModel(pl.LightningModule):
                 self.char_crit = nn.MSELoss()
                 initialize_weights(self.case_counter)
         
+        # For focal loss
         if args.focal_loss:
             reduction = 'none'
         else:
             reduction = 'mean'
 
+        # Criterion
         if args.transformer or args.prediction == 'attention':
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing, reduction=reduction)
         elif args.prediction == 'ctc':
@@ -212,18 +221,15 @@ class LightningModel(pl.LightningModule):
         elif args.prediction == 'parseq':
             self.criterion = nn.CrossEntropyLoss(ignore_index=converter.pad_id, reduction=reduction, label_smoothing=args.label_smoothing)
 
-
         # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
         self.cer_val_avg = Averager()
-
         if args.train:
             dset_size = 93100
         else:
             dset_size = 103000
         if args.num_samples > 0:
             dset_size = args.num_samples
-
         # if args.scheduler:
         #     assert args.epochs >= args.decay_epochs, 'Number of epochs must be greater than number of decay epochs'
         num_iters = [dset_size // args.batch_size * epoch for epoch in args.decay_epochs]
@@ -231,6 +237,7 @@ class LightningModel(pl.LightningModule):
         self.automatic_optimization = False
         # self.epoch_num = 0
 
+        # For ViTSTR, filter out parameters that do not require gradient decent
         if args.transformer:
             # filter that only require gradient decent
             filtered_parameters = []
@@ -238,8 +245,8 @@ class LightningModel(pl.LightningModule):
                 filtered_parameters.append(p)
             self.filtered_parameters = filtered_parameters
 
-        if args.save:
-            # Save hyperparameters
+        # Save hyperparameters
+        if args.save: 
             self.save_hyperparameters()
 
     
@@ -301,10 +308,12 @@ class LightningModel(pl.LightningModule):
                     n = (tgt_out != self.model.pad_id).sum().item()
             loss /= loss_numel
 
+        # Focal loss
         if self.args.focal_loss:
             p = torch.exp(-loss)
             loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * loss).mean()
 
+        # Count diacritics, uppercase letters, and characters
         if (not self.args.transformer):
             if (self.args.count_mark or self.args.count_case or self.args.count_char) and self.args.prediction == 'parseq' and (not self.args.parseq_use_transformer):
                 visual_feature = self.model.get_visual_features(images)
@@ -324,12 +333,12 @@ class LightningModel(pl.LightningModule):
                     char_loss = 0
                 loss = loss + case_loss * self.args.case_alpha  + char_loss * self.args.char_alpha
 
+        # Log training loss
         self.log('train_loss', loss, reduce_fx='mean', prog_bar=True)
         # self.loss_train_avg.add(loss.item())
 
         # Update weights
         self.manual_backward(loss)
-        # clip gradients
         self.clip_gradients(opt, gradient_clip_val=self.args.clip_grad_val, gradient_clip_algorithm="norm")
         opt.step()
 
@@ -339,12 +348,6 @@ class LightningModel(pl.LightningModule):
             scheduler.step()
         # Log learning rate
         self.log('lr', opt.param_groups[0]['lr'], prog_bar=True)
-
-
-    # def on_train_epoch_end(self):
-    #     # print(f'Training Loss: {self.loss_train_avg.val():.4f}')
-    #     # self.loss_train_avg.reset()
-    #     self.epoch_num += 1
 
 
     def validation_step(self, batch, batch_idx):
@@ -399,11 +402,12 @@ class LightningModel(pl.LightningModule):
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
-
+        # Focal loss
         if self.args.focal_loss:
             p = torch.exp(-val_loss)
             val_loss = (self.args.focal_loss_alpha * ((1 - p) ** self.args.focal_loss_gamma) * val_loss).mean()
 
+        # Count diacritics, uppercase letters, and characters
         if (not self.args.transformer) and self.args.prediction != 'parseq':
             if self.args.count_mark:
                 mark_pred = self.mark_counter(visual_feature)
@@ -421,6 +425,7 @@ class LightningModel(pl.LightningModule):
                     char_loss = 0
                 val_loss = val_loss + case_loss * self.args.case_alpha  + char_loss * self.args.char_alpha
 
+        # Log validation loss
         self.log('val_loss', val_loss, reduce_fx='mean', prog_bar=True)
         self.loss_val_avg.add(val_loss.item())
 
@@ -448,12 +453,15 @@ class LightningModel(pl.LightningModule):
 
 
     def configure_optimizers(self):
+        # Optimizer
         if not self.args.timm_optim:
+            # Common hyperparameters for optimizer
             optimizer_params = {
                 'lr': self.args.lr,
                 'weight_decay': self.args.weight_decay
             }
 
+            # Filter out parameters
             if self.args.transformer:
                 params = self.filtered_parameters
             elif self.args.prediction == 'parseq':
@@ -461,6 +469,7 @@ class LightningModel(pl.LightningModule):
             else:
                 params = self.parameters()
 
+            # Create optimizer
             if self.args.optim == 'adam':
                 optimizer = torch.optim.Adam(
                     params, betas=(self.args.momentum, 0.999), **optimizer_params
@@ -477,7 +486,7 @@ class LightningModel(pl.LightningModule):
                 optimizer = torch.optim.Adadelta(
                     params, **optimizer_params, eps=1e-8, rho=0.95
                 )
-        else:
+        else:  # Use timm optimizer
             optimizer = create_optimizer_v2(self.model, self.args.optim, 
                                             lr=self.args.lr, weight_decay=self.args.weight_decay,
                                             momentum=self.args.momentum
@@ -485,9 +494,6 @@ class LightningModel(pl.LightningModule):
 
         # Learning rate scheduler
         if self.args.scheduler:
-            # scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            #     optimizer, T_max=self.num_iter
-            # )
             if self.args.one_cycle:
                 scheduler = optim.lr_scheduler.OneCycleLR(
                     optimizer, max_lr=self.args.lr, total_steps=self.trainer.estimated_stepping_batches, 
@@ -501,7 +507,6 @@ class LightningModel(pl.LightningModule):
 
         return optimizer
     
-
 
 def initialize_weights(model):
     # weight initialization
