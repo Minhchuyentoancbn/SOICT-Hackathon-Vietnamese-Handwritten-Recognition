@@ -471,7 +471,10 @@ def _conv_filter(state_dict, patch_size=16):
     out_dict = {}
     for k, v in state_dict.items():
         if 'patch_embed.proj.weight' in k:
-            v = v.reshape((v.shape[0], 3, patch_size, patch_size))
+            try:
+                v = v.reshape((v.shape[0], 3, patch_size, patch_size))
+            except:
+                v = v.reshape((v.shape[0], 1, patch_size, patch_size))
         out_dict[k] = v
     return out_dict
 
