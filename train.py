@@ -45,6 +45,8 @@ def get_data(
     np.random.seed(seed)
     
     data_augment = DataAugment(prob=args.augment_prob)
+
+    # Get the transforms
     if args.grayscale:
         if args.otsu:
             grayscale = OtsuGrayscale()
@@ -67,6 +69,7 @@ def get_data(
         align
     ])
 
+    # Get the datasets
     train_dataset = HandWrittenDataset(
         TRAIN_DIR, LABEL_FILE,
         name='train_img', transform=train_transform
@@ -80,6 +83,7 @@ def get_data(
         name='public_test_img', transform=test_transform
     )
 
+    # Split the training data into train and validation
     if args.train:
         # Split the training data into train and validation
         if os.path.exists('train_inds.pkl') and os.path.exists('val_inds.pkl'):
@@ -117,7 +121,7 @@ def get_data(
 
         train_set = Subset(train_dataset, train_inds)
         val_set = Subset(val_dataset, val_inds)
-    else:
+    else:  # Use all training data for training
         print('Using all training data for training')
         train_set = train_dataset
         if args.num_samples > 0:
@@ -186,7 +190,7 @@ def train(args):
         input_channel = 3
 
     # Get the model
-    if args.prediction == 'parseq':
+    if args.prediction == 'parseq': # Use PARSeq
         if args.parseq_model == 'small' or args.parseq_model == 'small_pretrained':
             embed_dim = 384
             num_heads = 6
@@ -200,7 +204,7 @@ def train(args):
             embed_dim=embed_dim, enc_num_heads=num_heads, patch_size=args.patch_size, refine_iters=args.refine_iters,
             pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model
         )
-    else:
+    else:  
         model = Model(
             input_channel, args.height, args.width, NUM_CLASSES,
             args.stn_on, args.feature_extractor, args.prediction,
