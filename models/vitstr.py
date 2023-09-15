@@ -198,16 +198,16 @@ def vitstr_base_patch16_224(pretrained=False, **kwargs):
             model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 1), filter_fn=_conv_filter)
     return model
 
-# below is work in progress
+
 @register_model
-def vitstr_base_pretrained_patch16_224(pretrained=False, **kwargs):
+def vitstr_small_pretrained_patch16_224(pretrained=False, **kwargs):
     kwargs['in_chans'] = 1
     #kwargs['distilled'] = True
     model = ViTSTR(
-        patch_size=16, embed_dim=192, depth=12, num_heads=3, mlp_ratio=4, qkv_bias=True, **kwargs)
+        patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, **kwargs)
     model.default_cfg = _cfg(
             # url='https://dl.fbaipublicfiles.com/deit/deit_tiny_distilled_patch16_224-b40b3cf7.pth'
-            url='https://github.com/roatienza/deep-text-recognition-benchmark/releases/download/v0.1.0/vitstr_base_patch16_224_aug.pth'
+            url='https://github.com/roatienza/deep-text-recognition-benchmark/releases/download/v0.1.0/vitstr_small_patch16_224_aug.pth'
     )
 
     if pretrained:
@@ -217,14 +217,14 @@ def vitstr_base_pretrained_patch16_224(pretrained=False, **kwargs):
 
 
 @register_model
-def vitstr_small_pretrained_patch16_224(pretrained=False, **kwargs):
+def vitstr_base_pretrained_patch16_224(pretrained=False, **kwargs):
     kwargs['in_chans'] = 1
-    kwargs['distilled'] = True
+    # kwargs['distilled'] = True
     model = ViTSTR(
-        patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, **kwargs)
+        patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, **kwargs)
     model.default_cfg = _cfg(
             # url="https://dl.fbaipublicfiles.com/deit/deit_small_distilled_patch16_224-649709d9.pth"
-            url='https://github.com/roatienza/deep-text-recognition-benchmark/releases/download/v0.1.0/vitstr_small_patch16_224_aug.pth'
+            url='https://github.com/roatienza/deep-text-recognition-benchmark/releases/download/v0.1.0/vitstr_base_patch16_224_aug.pth'
     )
     if pretrained:
         load_pretrained(
