@@ -37,9 +37,9 @@ class HandWrittenDataset(Dataset):
         max_len: int
             Maximum length of the label.
         """
-        if label_file is not None:
+        if label_file is not None:  # train
             self.labels = pd.read_csv(label_file, sep='\t', header=None, encoding='utf-8', na_filter=False)
-        else:
+        else:  # public_test
             self.labels = None
         self.transform = transform
         self.root_dir = root_dir
@@ -53,27 +53,29 @@ class HandWrittenDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
+        # Read image
         try:
             img_name = f'{self.name}_{idx}.jpg'
             image = Image.open(os.path.join(self.root_dir, img_name))
         except:
             img_name = f'{self.name}_{idx}.png'
             image = Image.open(os.path.join(self.root_dir, img_name))
-
+        # Transform image
         if self.transform:
             image = self.transform(image)
-
+        # Read label
         if self.labels is not None:
             label = self.labels.iloc[idx, 1]
             return image, label
         else:
             return image, img_name
         
+
 def collate_fn(batch):
     images, labels = zip(*batch)
     images = torch.stack(images, 0)
-    num_marks = count_denmark(labels)
-    num_uppercase = count_uppercase(labels)
+    num_marks = count_denmark(labels)  # (N, 5), number of each type of diacritic mark
+    num_uppercase = count_uppercase(labels)  # (N, 1), number of uppercase characters
     return images, labels, num_marks, num_uppercase
         
 
@@ -164,7 +166,7 @@ class Align(object):
         self.imgH = imgH
         self.imgW = imgW
         self.keep_ratio_with_pad = keep_ratio_with_pad
-        if transformer:
+        if transformer:  # ViTSRT
             self.scale = False
         else:
             self.scale = True
