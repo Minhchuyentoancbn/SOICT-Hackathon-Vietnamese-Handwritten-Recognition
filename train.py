@@ -187,10 +187,10 @@ def train(args):
 
     # Get the model
     if args.prediction == 'parseq':
-        if args.parseq_model == 'small':
+        if args.parseq_model == 'small' or args.parseq_model == 'small_pretrained':
             embed_dim = 384
             num_heads = 6
-        elif args.parseq_model == 'base':
+        elif args.parseq_model == 'base' or args.parseq_model == 'base_pretrained':
             embed_dim = 768
             num_heads = 12
 
@@ -198,7 +198,7 @@ def train(args):
             args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
             (args.height, args.width), stn_on=args.stn_on, seed=args.seed, img_channel=input_channel,
             embed_dim=embed_dim, enc_num_heads=num_heads, patch_size=args.patch_size, refine_iters=args.refine_iters,
-            pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer
+            pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model
         )
     else:
         model = Model(

@@ -150,7 +150,7 @@ class PARSeq(nn.Module):
                  dec_num_heads: int = 12, dec_mlp_ratio: int = 4, dec_depth: int = 1,
                  perm_num: int = 6, perm_forward: bool = True, perm_mirrored: bool = True,
                  decode_ar: bool = True, refine_iters: int = 1, dropout: float = 0.1, stn_on: bool = False, 
-                 pretrained: bool = False, seed: int = 42, transformer: bool = True
+                 pretrained: bool = False, seed: int = 42, transformer: bool = True, model_name: str = 'small'
                  ) -> None:
 
         super().__init__()
@@ -166,10 +166,14 @@ class PARSeq(nn.Module):
         self.trasformer = transformer
         if transformer:
             if pretrained:
-                if embed_dim == 384:  # small
+                if model_name == 'small':
                     self.encoder = parseq_small_patch16_224(pretrained=True)
-                elif embed_dim == 768:  # base
+                elif model_name == 'base':  # base
                     self.encoder = parseq_base_patch16_224(pretrained=True)
+                elif model_name == 'small_pretrained':
+                    self.encoder = parseq_small_pretrained_patch16_224(pretrained=True)
+                elif model_name == 'base_pretrained':
+                    self.encoder = parseq_base_pretrained_patch16_224(pretrained=True)
             else:
                 self.encoder = Encoder(img_size, patch_size, embed_dim=embed_dim, depth=enc_depth, num_heads=enc_num_heads,
                                        mlp_ratio=enc_mlp_ratio, in_chans=img_channel)
@@ -495,6 +499,37 @@ def parseq_base_patch16_224(pretrained=False, **kwargs):
     model.default_cfg = _cfg(
             #url='https://github.com/roatienza/public/releases/download/v0.1-deit-base/deit_base_patch16_224-b5f2ef4d.pth'
             url='https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth'
+    )
+    if pretrained:
+        load_pretrained(
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 1), filter_fn=_conv_filter)
+    return model
+
+
+
+@register_model
+def parseq_small_pretrained_patch16_224(pretrained=False, **kwargs):
+    kwargs['in_chans'] = 1
+    model = Encoder(
+        patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True, **kwargs)
+    model.default_cfg = _cfg(
+            #url="https://github.com/roatienza/public/releases/download/v0.1-deit-small/deit_small_patch16_224-cd65a155.pth"
+            url="https://github.com/roatienza/deep-text-recognition-benchmark/releases/download/v0.1.0/vitstr_small_patch16_224_aug.pth"
+    )
+    if pretrained:
+        load_pretrained(
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 1), filter_fn=_conv_filter)
+    return model
+
+
+@register_model
+def parseq_base_pretrained_patch16_224(pretrained=False, **kwargs):
+    kwargs['in_chans'] = 1
+    model = Encoder(
+        patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, **kwargs)
+    model.default_cfg = _cfg(
+            #url='https://github.com/roatienza/public/releases/download/v0.1-deit-base/deit_base_patch16_224-b5f2ef4d.pth'
+            url='https://github.com/roatienza/deep-text-recognition-benchmark/releases/download/v0.1.0/vitstr_base_patch16_224_aug.pth'
     )
     if pretrained:
         load_pretrained(
