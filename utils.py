@@ -699,3 +699,17 @@ def vietnamese_sort_key(word):
 def vietnamese_case_insensitive_sort_key(word):
     word = unicodedata.normalize('NFC', word)
     return [vietnamese_order_dict[c] for c in word.lower()]
+
+pattern_lower = "áàảãạắằẳẵặấầẩẫậèéẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ"
+replacement = "a"*5 + "ă"*5 + "â"*5 + "e"*5 + "ê"*5 + "i"*5 + "o"*5 + "ô"*5 + "ơ"*5 + "u"*5 + "ư"*5 + "y"*5
+
+
+BANG_XOA_DAU = str.maketrans(
+    pattern_lower + pattern_lower.upper(),
+    replacement + replacement.upper(),
+)
+
+def delete_diacritic(txt: str) -> str:
+    if not unicodedata.is_normalized("NFC", txt):
+        txt = unicodedata.normalize("NFC", txt)
+    return txt.translate(BANG_XOA_DAU)
