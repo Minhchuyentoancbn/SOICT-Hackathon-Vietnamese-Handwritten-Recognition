@@ -16,7 +16,7 @@ augmentation/frost/
 augmentation/images/
 
 
-predictions/
+predictions/*.csv
 scripts/*.sh
 
 models/timm/
