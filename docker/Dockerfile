@@ -35,23 +35,7 @@ COPY scripts/ /app/text_recognition/scripts
 
 WORKDIR /app
 
-# Copy checkpoints
-COPY saved_models/model2_synth_full.pt /app/text_recognition/saved_models/model2_synth_full.pt
-COPY saved_models/model4_synth_full.pt /app/text_recognition/saved_models/model4_synth_full.pt
-COPY saved_models/model5_synth_full.pt /app/text_recognition/saved_models/model5_synth_full.pt
-COPY saved_models/model10_synth_full.pt /app/text_recognition/saved_models/model10_synth_full.pt
-COPY saved_models/model3_full.pt /app/text_recognition/saved_models/model3_full.pt
-COPY saved_models/model4_full.pt /app/text_recognition/saved_models/model4_full.pt
-COPY saved_models/model5_full.pt /app/text_recognition/saved_models/model5_full.pt
-COPY saved_models/model7_full.pt /app/text_recognition/saved_models/model7_full.pt
-COPY saved_models/model9_full.pt /app/text_recognition/saved_models/model9_full.pt
-COPY saved_models/model10_full.pt /app/text_recognition/saved_models/model10_full.pt
-COPY saved_models/model15_full.pt /app/text_recognition/saved_models/model15_full.pt
-
 # Copy data
 COPY scripts/prepare_data.sh prepare_data.sh
-COPY data/public_test_data.zip /app/text_recognition/data/public_test_data.zip
-COPY data/training_data.zip /app/text_recognition/data/training_data.zip
-COPY data/synthesis.zip /app/text_recognition/data/synthesis.zip
 
 CMD [ "/bin/bash" ]
