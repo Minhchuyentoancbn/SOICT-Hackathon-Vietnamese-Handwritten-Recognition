@@ -35,6 +35,6 @@ COPY scripts/ /app/text_recognition/scripts
 WORKDIR /app
 
 # Copy data scripts
-COPY scripts/prepare_data.sh prepare_data.sh
+COPY scripts/prepare_data.sh /app/prepare_data.sh
 
 CMD [ "/bin/bash" ]
