@@ -37,4 +37,7 @@ WORKDIR /app
 # Copy data scripts
 COPY scripts/prepare_data.sh /app/prepare_data.sh
 
+# Copy prediction results
+COPY predictions/ /app/text_recognition/predictions
+
 CMD [ "/bin/bash" ]
