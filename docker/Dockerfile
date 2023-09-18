@@ -32,7 +32,6 @@ RUN git clone https://github.com/Minhchuyentoancbn/Deep-Learning.git text_recogn
 WORKDIR /app/text_recognition
 COPY scripts/ /app/text_recognition/scripts
 
-
 WORKDIR /app
 
 # Copy data
