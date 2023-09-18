@@ -1,4 +1,3 @@
-.gitignore
 *.pdf
 *.zip
 
@@ -10,7 +9,7 @@ data/new_*
 data/false_predictions
 data/two_characters/
 data/synthesis/
-saved_models/
+saved_models/*.pt
 ensemble/
 checkpoints/*/
 augmentation/frost/
