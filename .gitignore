@@ -1,3 +1,4 @@
+.gitignore
 *.pdf
 *.zip
 
@@ -6,12 +7,15 @@
 *__pycache__*
 
 data/new_*
+data/false_predictions
 data/two_characters/
 data/synthesis/
 saved_models/
+ensemble/
 checkpoints/*/
 augmentation/frost/
 augmentation/images/
+
 
 predictions/
 scripts/*.sh
