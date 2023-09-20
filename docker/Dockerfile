@@ -35,6 +35,13 @@ RUN python3 -m pip install --upgrade pip
 RUN pip3 install torch torchvision torchaudio -f https://download.pytorch.org/whl/cu111/torch_stable.html
 RUN pip3 install -r requirements.txt
 
+# alias
+RUN echo 'alias [python](https://saturncloud.io/glossary/python)="python3" ' >> ~/.bashrc
+RUN echo 'alias pip="pip3" ' >> ~/.bashrc
+
+# Install tensorflow
+RUN pip3 install tensorflow
+
 # Clone code
 WORKDIR /app
 RUN git clone https://github.com/Minhchuyentoancbn/Deep-Learning.git text_recognition
@@ -48,5 +55,7 @@ COPY scripts/prepare_data.sh /app/prepare_data.sh
 
 # Copy prediction results
 COPY predictions/ /app/text_recognition/predictions
+
+COPY scrabble-gan /app/scrabble-gan
 
 CMD [ "/bin/bash" ]
