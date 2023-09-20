@@ -13,6 +13,7 @@ from models.srn import Transforme_Encoder, SRN_Decoder, cal_performance
 from models.counter import MarkCounter, UpperCaseCounter
 from models.vitstr import create_vitstr
 from timm.optim import create_optimizer_v2
+from models.resnet_aster import ResNet_ASTER
 
 
 class Model(nn.Module):
@@ -86,6 +87,8 @@ class Model(nn.Module):
             self.feature_extractor = VGG_FeatureExtractor(img_channel, 512)
         elif feature_extractor == 'densenet':
             self.feature_extractor = DenseNet_FeatureExtractor(img_channel)
+        elif feature_extractor == 'aster':
+            self.feature_extractor = ResNet_ASTER(img_channel)
     
         if feature_extractor == 'densenet':
             output_channel = 2208
