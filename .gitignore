@@ -15,6 +15,7 @@ checkpoints/*/
 augmentation/frost/
 augmentation/images/
 
+scrabble-gan/
 
 predictions/*.csv
 scripts/*.sh
