@@ -45,7 +45,7 @@ bash scripts/prepare_models.sh
 
 - Kết quả của chúng tôi thu được là từ ensemble của nhiều mô hình khác nhau. Cụ thể là từ các mô hình trong danh sách sau:     ['model5_synth_full', 'model9_full', 'model7_full', 'model4_full', 'model15_full', 'model10_synth_full', 'model10_full', 'model3_full', 'model4_synth_full', 'model2_synth_full', 'model5_full']
 
-- Chạy lệnh sau để _huấn luyện_ các mô hình riêng lẻ và _dự đoán_ kết quả trên tập public test, có thể thay `model5_synth_full` trong câu lệnh bằng tên của mô hình khác trong danh sách trên. Kết quả dự đoán sẽ được lưu vào thư mục `predictions/` và weights của mô hình sẽ được lưu vào thư mục `saved_models/`:
+- Chạy lệnh sau để _huấn luyện_ các mô hình riêng lẻ và _dự đoán_ kết quả trên tập public test, có thể thay `model5_synth_full` trong câu lệnh bằng tên của mô hình khác trong danh sách trên.
 
 ```bash
 cd /app/text_recognition
@@ -76,8 +76,7 @@ cat prediction.txt
 ### 3.2. Sinh dữ liệu
 
 - Chúng tôi huấn luyện với bộ dữ liệu công khai từ tập dữ liệu của BTC, bao gồm khoảng 100k hình ảnh viết tay tiếng Việt.
-- Chúng tôi đã biểu diễn bộ dữ liệu dưới dạng IAM-Handwriting DB và tuân theo hướng dẫn gốc
-- Chúng tôi đã huấn luyện trong 15 epochs do hạn chế về tài nguyên thời gian và phần cứng. Các file weight đã được huấn luyện có thể được tìm thấy [tại đây](https://www.kaggle.com/datasets/nmddfdfd/scrabble-gan-modelv1)
+- Chúng tôi đã huấn luyện trong 15 epochs do hạn chế về tài nguyên thời gian và phần cứng.
 
 #### 3.2.1. Train mô hình
 
@@ -89,13 +88,13 @@ python3 src/main.py
 
 #### 3.2.2. Inference
 
-- Chúng tôi đã lưu sẵn một mô hình mà chúng tôi đã huấn luyện từ trước trong `weights/generator_15`. Dữ liệu huấn liệu được sinh ra sẽ là dữ liệu được infer từ mô hình này.
+- Chúng tôi đã lưu sẵn một mô hình mà chúng tôi đã huấn luyện từ trước trong `/scrabble-gan/weights/generator_15`. Dữ liệu huấn liệu được sinh ra sẽ là dữ liệu được infer từ mô hình này.
 - Để sinh dữ liệu, bạn có thể chạy lệnh sau:
 ```bash
 cd /app/scrabble-gan
 python3 src/infer.py
 ```
-- Khi chạy dòng lệnh trên, sẽ có 30K ảnh mới được sinh ra trong thư mục scrabble-gan/output/images
+- Khi chạy dòng lệnh trên, sẽ có 30K ảnh mới được sinh ra trong thư mục `/scrabble-gan/output/images`
 
 
 __Chú thích__: Tất cả code đều được chúng tôi viết trên hệ điều hành Windows và chạy mô hình trên Kaggle. Do đó có thể sẽ có một số lỗi khi chạy trên linux. Nếu gặp lỗi, mong các bạn thông cảm và thông báo cho chúng tôi để chúng tôi có thể hỗ trợ và fix lỗi đó.
