@@ -35,9 +35,6 @@ RUN python3 -m pip install --upgrade pip
 RUN pip3 install torch torchvision torchaudio -f https://download.pytorch.org/whl/cu111/torch_stable.html
 RUN pip3 install -r requirements.txt
 
-# alias
-RUN echo 'alias [python](https://saturncloud.io/glossary/python)="python3" ' >> ~/.bashrc
-RUN echo 'alias pip="pip3" ' >> ~/.bashrc
 
 # Install tensorflow
 RUN pip3 install tensorflow
