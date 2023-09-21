@@ -37,7 +37,8 @@ RUN pip3 install -r requirements.txt
 
 
 # Install tensorflow
-RUN pip3 install tensorflow
+# RUN pip3 install nvidia-cudnn-cu11==8.6.0.163
+RUN pip3 install tensorflow==2.12.0
 
 # Clone code
 WORKDIR /app
