@@ -98,6 +98,4 @@ python3 src/infer.py
 - Khi chạy dòng lệnh trên, sẽ có 30K ảnh mới được sinh ra trong thư mục `/scrabble-gan/output/images`
 
 
-__Chú thích__: Tất cả code đều được chúng tôi viết trên hệ điều hành Windows và chạy mô hình trên Kaggle. Do đó có thể sẽ có một số lỗi khi chạy trên linux. Nếu gặp lỗi, mong các bạn thông cảm và thông báo cho chúng tôi để chúng tôi có thể hỗ trợ và fix lỗi đó.
-
-
+__Chú thích__: Tất cả code đều được chúng tôi viết trên hệ điều hành Windows và chạy mô hình trên Kaggle. Do đó có thể sẽ có một số lỗi khi chạy trên linux. Nếu gặp lỗi, mong các bạn thông cảm và thông báo cho chúng tôi để chúng tôi có thể hỗ trợ và fix lỗi đó. Xin chân thành cảm ơn!
