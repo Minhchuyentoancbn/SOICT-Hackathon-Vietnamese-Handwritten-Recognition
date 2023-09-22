@@ -8,6 +8,8 @@
 data/new_*
 data/false_predictions
 data/two_characters/
+data/super_resolution_val/
+data/val_set/
 data/synthesis/
 saved_models/*.pt
 ensemble/
