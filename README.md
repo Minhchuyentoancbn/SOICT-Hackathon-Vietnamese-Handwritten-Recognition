@@ -77,6 +77,7 @@ cat prediction.txt
 
 - Chúng tôi huấn luyện với bộ dữ liệu công khai từ tập dữ liệu của BTC, bao gồm khoảng 100k hình ảnh viết tay tiếng Việt.
 - Chúng tôi đã huấn luyện trong 15 epochs do hạn chế về tài nguyên thời gian và phần cứng.
+- Nếu trong quá trình chạy sinh dữ liệu có phát sinh vấn đề gì, vui lòng chạy docker container không sử dụng GPU.
 
 #### 3.2.1. Train mô hình
 
