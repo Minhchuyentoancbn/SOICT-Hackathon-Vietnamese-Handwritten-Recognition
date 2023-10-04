@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from config import LABEL_FILE
-from utils import delete_diacritic
+from tools import delete_diacritic
 
 
 def make_test_prediction(candidates, mask=False, alpha=0.125, case_sensitive=True, diacritics=False):
