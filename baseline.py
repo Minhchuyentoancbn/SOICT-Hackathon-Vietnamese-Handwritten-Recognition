@@ -387,13 +387,13 @@ class LightningModel(pl.LightningModule):
             val_loss = self.criterion(preds.contiguous().view(-1, preds.shape[-1]), target.contiguous().view(-1))
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
-            labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
+            # labels = self.converter.decode(text_for_loss[:, 1:], length_for_loss)
         elif self.args.prediction == 'srn':
             preds, visual_feature = self.model(images, None)
             val_loss = self.criterion(preds, text_for_loss, self.converter.PAD, self.smoothing)
             _, preds_index = preds[2].max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
-            labels = self.converter.decode(text_for_loss, length_for_loss)
+            # labels = self.converter.decode(text_for_loss, length_for_loss)
         elif self.args.prediction == 'parseq':
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
             target = target[:, 1:]
@@ -435,13 +435,9 @@ class LightningModel(pl.LightningModule):
         # Compute CER
         total_cer = 0
         for gt, pred in zip(labels, preds_str):
-            if self.args.transformer:
+            if self.args.transformer or self.args.prediction == 'attention':
                 pred_EOS = pred.find('[s]')
-                pred = pred[:pred_EOS]
-            elif self.args.prediction == 'attention':
-                pred_EOS = pred.find('[s]')
-                gt = gt[:gt.find('[s]')]
-                pred = pred[:pred_EOS]
+                pred = pred[:pred_EOS] 
 
             total_cer += self.cer([pred], [gt])
         val_cer = total_cer / batch_size
