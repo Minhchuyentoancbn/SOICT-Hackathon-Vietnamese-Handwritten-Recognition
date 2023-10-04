@@ -241,7 +241,8 @@ class SRNConverter(object):
 class ParseqConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self, max_len=25, tone=False):
+    def __init__(self, tone=False):
+        max_len = 25
         self.to_tone = tone
         # character (str): set of the possible characters.
         # [GO] for the start token of the attention decoder. [s] for end-of-sentence token.
