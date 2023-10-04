@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 import sys
 import warnings
 from train import train
-from utils import parse_arguments
+from tools import parse_arguments
 
 
 if __name__ == '__main__':
