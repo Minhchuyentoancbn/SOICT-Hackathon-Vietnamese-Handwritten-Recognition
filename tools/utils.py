@@ -6,6 +6,7 @@ from baseline import Model
 from models.parseq import PARSeq
 from torchmetrics.text import CharErrorRate
 from argparse import ArgumentParser
+from .converters import CTCLabelConverter, AttnLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
