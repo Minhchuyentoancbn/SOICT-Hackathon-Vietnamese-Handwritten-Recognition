@@ -175,15 +175,15 @@ def load_model(name):
 
     # Get the converter
     if args.transformer:
-        converter = TokenLabelConverter(args.max_len)
+        converter = TokenLabelConverter(args.max_len, args.tone)
     elif args.prediction == 'ctc':
-        converter = CTCLabelConverter()
+        converter = CTCLabelConverter(args.tone)
     elif args.prediction == 'attention':
-        converter = AttnLabelConverter()
+        converter = AttnLabelConverter(args.tone)
     elif args.prediction == 'srn':
-        converter = SRNConverter()
+        converter = SRNConverter(args.tone)
     elif args.prediction == 'parseq':
-        converter = ParseqConverter()
+        converter = ParseqConverter(args.tone)
         
     NUM_CLASSES = converter.num_classes
 
