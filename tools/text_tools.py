@@ -217,7 +217,7 @@ def tone_decode(recognition):
     res = []
     for i, char in enumerate(recognition):
         if char in TONES:
-            if i == 0:
+            if i == 0 or len(res) == 0:
                 continue
             else:
                 for group in groups:
