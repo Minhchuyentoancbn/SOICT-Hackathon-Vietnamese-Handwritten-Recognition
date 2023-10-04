@@ -166,3 +166,65 @@ def delete_diacritic(txt: str) -> str:
     if not unicodedata.is_normalized("NFC", txt):
         txt = unicodedata.normalize("NFC", txt)
     return txt.translate(BANG_XOA_DAU)
+
+
+accent_dictionary = "aàáạảãâầấậẩẫăằắặẳẵAÀÁẠẢÃĂẰẮẶẲẴÂẦẤẬẨẪeèéẹẻẽêềếệểễEÈÉẸẺẼÊỀẾỆỂỄoòóọỏõôồốộổỗơờớợởỡOÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠiìíịỉĩIÌÍỊỈĨuùúụủũưừứựửữƯỪỨỰỬỮUÙÚỤỦŨyỳýỵỷỹYỲÝỴỶỸ"
+
+def make_groups():
+    groups = []
+    i = 0
+    while i < len(accent_dictionary) - 5:
+        group = [c for c in accent_dictionary[i : i + 6]]
+        i += 6
+        groups.append(group)
+    return groups
+
+
+groups = make_groups()
+
+TONES = ["", "1", "2", "3", "4", "5"]
+SOURCES = ["ă", "â", "Ă", "Â", "ê", "Ê", "ô", "ơ", "Ô", "Ơ", "ư", "Ư", "Đ", "đ"]
+TARGETS = ["a6", "a0", "A6", "A0", "e0", "E0", "o0", "o7", "O0", "O7", "u8", "U8", "D9", "d9"]
+
+def parse_tone(word):
+    res = ""
+    for char in word:
+        if char in accent_dictionary:
+            for group in groups:
+                if char in group:
+                    res += group[0]
+                    tone = TONES[group.index(char)]
+                    res += tone
+        else:
+            res += char
+    return res
+
+
+def tone_encode(word):
+    word = parse_tone(word)
+    res = ""
+    for char in word:
+        if char in SOURCES:
+            res += TARGETS[SOURCES.index(char)]
+        else:
+            res += char
+    return res
+
+
+def tone_decode(recognition):
+    for char in TARGETS:
+        recognition = recognition.replace(char, SOURCES[TARGETS.index(char)])
+    res = []
+    for i, char in enumerate(recognition):
+        if char in TONES:
+            if i == 0:
+                continue
+            else:
+                for group in groups:
+                    if res[-1] == group[0]:
+                        res[-1] = group[TONES.index(char)]
+        elif char not in ["0", "6", "7", "8", "9"]:
+            res.append(char)
+
+    recognition = "".join(res)
+    return recognition
