@@ -11,7 +11,7 @@ import os
 import math
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
-from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission
+from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission, tone_encode
 from baseline import Model, LightningModel
 from test import predict
 from models.parseq import PARSeq
@@ -138,6 +138,8 @@ def get_data(
 
         # Filter out the long labels
         synth_label_file = pd.read_csv('data/annotation2.txt', sep='\t', header=None, na_filter=False)
+        if args.tone:
+            synth_label_file[1] = synth_label_file[1].apply(tone_encode)
         synth_inds =  np.arange(len(synth_dataset))[(synth_label_file[1].str.len() < args.max_len)]
         if args.num_synth > 0:
             synth_inds = np.random.choice(synth_inds, args.num_synth, replace=False) # np.arange(args.num_synth)
@@ -172,15 +174,15 @@ def train(args):
 
     # Get the converter
     if args.transformer:
-        converter = TokenLabelConverter(args.max_len)
+        converter = TokenLabelConverter(args.max_len, args.tone)
     elif args.prediction == 'ctc':
-        converter = CTCLabelConverter()
+        converter = CTCLabelConverter(args.tone)
     elif args.prediction == 'attention':
-        converter = AttnLabelConverter()
+        converter = AttnLabelConverter(args.tone)
     elif args.prediction == 'srn':
-        converter = SRNConverter()
+        converter = SRNConverter(args.tone)
     elif args.prediction == 'parseq':
-        converter = ParseqConverter()
+        converter = ParseqConverter(args.tone)
         
     NUM_CLASSES = converter.num_classes
     
