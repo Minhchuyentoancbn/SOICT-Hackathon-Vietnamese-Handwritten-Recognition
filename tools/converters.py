@@ -1,13 +1,17 @@
 import torch
+from .text_tools import tone_decode, tone_encode
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class CTCLabelConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self):
+    def __init__(self, tone=False):
+        self.to_tone = tone
         # character (str): set of the possible characters.
         character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
         dict_character = list(character)
         self.num_classes = len(dict_character) + 1  # +1 for [CTCblank] token for CTCLoss (index 0)
 
@@ -39,6 +43,8 @@ class CTCLabelConverter(object):
         length: 
             length of each text. [batch_size]
         """
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
         length = [len(s) for s in text]
         # The index used for padding (=0) would not affect the CTC loss calculation.
         batch_text = torch.LongTensor(len(text), batch_max_length).fill_(0)
@@ -59,6 +65,8 @@ class CTCLabelConverter(object):
                 if t[i] != 0 and (not (i > 0 and t[i - 1] == t[i])):  # removing repeated characters and blank.
                     char_list.append(self.character[t[i]])
             text = ''.join(char_list)
+            if self.to_tone:
+                text = tone_decode(text)
             texts.append(text)
         return texts
 
@@ -66,9 +74,12 @@ class CTCLabelConverter(object):
 class AttnLabelConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self):
+    def __init__(self, tone=False):
+        self.to_tone = tone
         # [GO] for the start token of the attention decoder. [s] for end-of-sentence token.
         character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
         list_token = ['[GO]', '[s]']  # ['[s]','[UNK]','[PAD]','[GO]']
         list_character = list(character)
         self.character = list_token + list_character
@@ -101,7 +112,8 @@ class AttnLabelConverter(object):
         length : 
             the length of output of attention decoder, which count [s] token also. [3, 7, ....] [batch_size]
         """
-
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
         length = [len(s) + 1 for s in text]  # +1 for [s] at end of sentence.
 
         # batch_max_length = max(length) # this is not allowed for multi-gpu setting
@@ -122,6 +134,8 @@ class AttnLabelConverter(object):
         texts = []
         for index, l in enumerate(length):
             text = ''.join([self.character[i] for i in text_index[index, :]])
+            if self.to_tone:
+                text = tone_decode(text)
             texts.append(text)
         return texts
     
@@ -129,10 +143,13 @@ class AttnLabelConverter(object):
 class TokenLabelConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self, max_len=25):
+    def __init__(self, max_len=25, tone=False):
+        self.to_tone = tone
         # character (str): set of the possible characters.
         # [GO] for the start token of the attention decoder. [s] for end-of-sentence token.
         character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
         self.SPACE = '[s]'
         self.GO = '[GO]'
 
@@ -148,6 +165,8 @@ class TokenLabelConverter(object):
         """ 
         Convert text-label into text-index.
         """
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
         length = [len(s) + len(self.list_token) for s in text]  # +2 for [GO] and [s] at end of sentence.
         batch_text = torch.LongTensor(len(text), batch_max_length + len(self.list_token)).fill_(self.dict[self.GO])
         for i, t in enumerate(text):
@@ -161,6 +180,8 @@ class TokenLabelConverter(object):
         texts = []
         for index, l in enumerate(length):
             text = ''.join([self.character[i] for i in text_index[index, :]])
+            if self.to_tone:
+                text = tone_decode(text)
             texts.append(text)
         return texts
     
@@ -168,9 +189,12 @@ class TokenLabelConverter(object):
 class SRNConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self):
+    def __init__(self, tone=False):
+        self.to_tone = tone
         # character (str): set of the possible characters.
         character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ$#'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$#'
         self.character = list(character)
         self.num_classes = len(self.character)
         self.PAD = len(self.character) - 1
@@ -189,6 +213,8 @@ class SRNConverter(object):
                 text[:, 0] is [GO] token and text is padded with [GO] token after [s] token.
             length : the length of output of attention decoder, which count [s] token also. [3, 7, ....] [batch_size]
         """
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
         length = [len(s) + 1 for s in text]  # +1 for [s] at end of sentence.
         # additional +1 for [GO] at first step. batch_text is padded with [GO] token after [s] token.
         batch_text = torch.LongTensor(len(text), batch_max_length + 1).fill_(self.PAD).to(device)
@@ -205,17 +231,23 @@ class SRNConverter(object):
         for index, l in enumerate(length):
             text = ''.join([self.character[i] for i in text_index[index, :]])
             idx = text.find('$')
-            texts.append(text[:idx])
+            text = text[:idx]
+            if self.to_tone:
+                text = tone_decode(text)
+            texts.append(text)
         return texts
     
 
 class ParseqConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self, max_len=25):
+    def __init__(self, max_len=25, tone=False):
+        self.to_tone = tone
         # character (str): set of the possible characters.
         # [GO] for the start token of the attention decoder. [s] for end-of-sentence token.
         character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
         self.EOS = '[E]'
         self.BOS = '[B]'
         self.PAD = '[P]'
@@ -234,6 +266,8 @@ class ParseqConverter(object):
         """ 
         Convert text-label into text-index.
         """
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
         length = [len(s) + 2 for s in text]  # +2 for [GO] and [s] at end of sentence.
         batch_text = torch.LongTensor(len(text), batch_max_length + 2).fill_(self.pad_id)
         for i, t in enumerate(text):
@@ -248,5 +282,8 @@ class ParseqConverter(object):
         for index, l in enumerate(length):
             text = ''.join([self.character[i] for i in text_index[index, :]])
             idx = text.find(self.EOS)
-            texts.append(text[:idx])
+            text = text[:idx]
+            if self.to_tone:
+                text = tone_decode(text)
+            texts.append(text)
         return texts
