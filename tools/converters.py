@@ -1,3 +1,5 @@
+import torch
+
 class CTCLabelConverter(object):
     """ Convert between text-label and text-index """
 
