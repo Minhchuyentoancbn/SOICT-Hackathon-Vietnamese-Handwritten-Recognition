@@ -11,7 +11,7 @@ import os
 import math
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
-from utils import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission
+from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission
 from baseline import Model, LightningModel
 from test import predict
 from models.parseq import PARSeq

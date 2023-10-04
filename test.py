@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from utils import get_device
+from tools import get_device
 
 
 def predict(model, dataloader, converter, prediction, max_length=25, transformer=0):
