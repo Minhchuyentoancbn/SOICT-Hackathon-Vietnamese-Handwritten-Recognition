@@ -288,3 +288,13 @@ class ParseqConverter(object):
                 text = tone_decode(text)
             texts.append(text)
         return texts
+    
+    def get_tgt_paddding_mask(self, text, batch_max_length=25):
+        """ 
+        Create target padding mask for Transformer.
+        """
+        batch_text = self.encode(text, batch_max_length)
+        tgt_mask = batch_text == self.pad_id
+        tgt_mask = tgt_mask.to(device)
+        # tgt_mask = tgt_mask[:, :-1]
+        return batch_text, tgt_mask
