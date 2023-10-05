@@ -71,7 +71,7 @@ def parse_arguments(argv):
     # Other models
     parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster')
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
-    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq')
+    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, transocr')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
 
     # Auxiliary loss
