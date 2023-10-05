@@ -182,7 +182,7 @@ def load_model(name):
         converter = AttnLabelConverter(args.tone)
     elif args.prediction == 'srn':
         converter = SRNConverter(args.tone)
-    elif args.prediction == 'parseq':
+    elif args.prediction == 'parseq' or args.prediction == 'transocr':
         converter = ParseqConverter(args.tone)
         
     NUM_CLASSES = converter.num_classes
