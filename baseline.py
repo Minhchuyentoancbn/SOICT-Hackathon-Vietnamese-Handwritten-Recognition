@@ -68,6 +68,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.predict_method = prediction
         self.max_len = max_len
+        self.extractor_type = feature_extractor
 
         # Transformation
         if stn_on:
@@ -146,7 +147,7 @@ class Model(nn.Module):
             self.prediction = nn.Identity()
 
         # weight initialization
-        if self.feature_extractor != 'convnext':
+        if feature_extractor != 'convnext':
             initialize_weights(self.feature_extractor)
         initialize_weights(self.sequence_modeling)
         initialize_weights(self.adaptive_pool)
@@ -166,7 +167,7 @@ class Model(nn.Module):
             return prediction
 
         # Feature extraction
-        if self.feature_extractor == 'convnext':
+        if self.extractor_type == 'convnext':
             feature_map = self.feature_extractor(images)[-2]
         else:
             feature_map = self.feature_extractor(images)
