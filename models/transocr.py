@@ -7,9 +7,11 @@ class LanguageTransformer(nn.Module):
                  d_model, nhead, 
                  num_encoder_layers, num_decoder_layers, 
                  dim_feedforward, max_seq_length, 
-                 pos_dropout, trans_dropout):
+                 pos_dropout, trans_dropout,
+                 ):
         super().__init__()
         
+        self.vocab_size = vocab_size
         self.d_model = d_model
         self.embed_tgt = nn.Embedding(vocab_size, d_model)
         self.pos_enc = PositionalEncoding(d_model, pos_dropout, max_seq_length)
@@ -73,6 +75,28 @@ class LanguageTransformer(nn.Module):
     def get_memory(self, memory, i):
         memory = memory[:, [i], :]
         return memory
+
+    def predict(self, x, seqlen, bos_id):
+        with torch.no_grad():
+            memory = self.forward_encoder(x)
+            translated_sentence = [[bos_id] * len(x)]
+            preds = torch.zeros((len(x), seqlen, self.vocab_size))
+
+            max_length = 0
+            while max_length < seqlen:
+                tgt_inp = torch.LongTensor(translated_sentence).to(x.device)
+                output, memory = self.forward_decoder(tgt_inp, memory)
+                output = output.cpu()
+                values, indices  = torch.topk(output, 5)
+                indices = indices[:, -1, 0]
+                indices = indices.tolist()
+                translated_sentence.append(indices)
+
+                preds[:, max_length, :] = output[:, -1, :]
+
+                max_length += 1
+
+            return preds
 
 
 class PositionalEncoding(nn.Module):
