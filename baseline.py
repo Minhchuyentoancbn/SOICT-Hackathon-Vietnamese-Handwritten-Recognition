@@ -443,7 +443,7 @@ class LightningModel(pl.LightningModule):
             # tgt_input = target[:, :-1]
             tgt_output = target[:, 1:]
             # tgt_key_padding_mask = tgt_padding_mask[:, 1:]
-            preds, _ = self.model(images, is_train=False, seqlen=self.args.max_len, bos_id=self.converter.bos_id)
+            preds, _ = self.model(images, is_train=False, seqlen=self.args.max_len + 1, bos_id=self.converter.bos_id)
             val_loss = self.criterion(preds.flatten(end_dim=1), tgt_output.flatten())
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
