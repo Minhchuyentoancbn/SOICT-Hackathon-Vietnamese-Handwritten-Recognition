@@ -82,6 +82,10 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                 preds = model(images)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, length_for_pred)
+            elif prediction == 'transocr':
+                preds, _ = model(images, is_train=False, seqlen=max_length, bos_id=converter.bos_id)
+                _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+                preds_str = converter.decode(preds_index, length_for_pred)
 
             img_names_lst += list(img_names)
 
@@ -94,7 +98,7 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                     pred_EOS = pred.find('[s]')
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
                     pred_max_prob = pred_max_prob[:pred_EOS]
-                elif prediction == 'srn' or prediction == 'parseq':
+                elif prediction == 'srn' or prediction == 'parseq' or prediction == 'transocr':
                     pred_EOS = len(pred)
                     pred_max_prob = pred_max_prob[:pred_EOS]
                     
