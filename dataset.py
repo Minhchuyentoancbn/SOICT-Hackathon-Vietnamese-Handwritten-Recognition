@@ -171,7 +171,6 @@ class Align(object):
         else:
             self.scale = True
 
-
     def __call__(self, img):
         if self.keep_ratio_with_pad:  # same concept with 'Rosetta' paper
             resized_max_w = self.imgW
