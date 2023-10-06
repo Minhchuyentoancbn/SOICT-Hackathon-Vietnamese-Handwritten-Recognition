@@ -78,14 +78,16 @@ class LanguageTransformer(nn.Module):
 
     def predict(self, x, seqlen, bos_id):
         with torch.no_grad():
+            B = x.shape[1]
             memory = self.forward_encoder(x)
-            translated_sentence = [[bos_id] * len(x)]
-            preds = torch.zeros((len(x), seqlen, self.vocab_size))
+            translated_sentence = [[bos_id] * B]
+            preds = torch.zeros((B, seqlen, self.vocab_size))
 
             max_length = 0
             while max_length < seqlen:
                 tgt_inp = torch.LongTensor(translated_sentence).to(x.device)
                 output, memory = self.forward_decoder(tgt_inp, memory)
+                # torch.save(output, 'output.pt')
                 output = output.cpu()
                 values, indices  = torch.topk(output, 5)
                 indices = indices[:, -1, 0]
