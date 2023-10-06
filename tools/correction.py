@@ -116,7 +116,7 @@ class Correction:
                         train_inds = pickle.load(f)
                     df = df.iloc[train_inds]
 
-                labels = df[1].value_counts()
+                labels = df[1].str.lower().value_counts()
                 self.dictionary = labels.to_dict()
                 # for id, row in df.iterrows():
                 #     # self.dictionary[row.text.lower()] = row.lbl
