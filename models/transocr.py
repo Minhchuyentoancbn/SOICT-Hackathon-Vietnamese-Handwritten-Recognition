@@ -98,7 +98,7 @@ class LanguageTransformer(nn.Module):
 
                 max_length += 1
 
-            return preds
+            return preds.to(x.device)
 
 
 class PositionalEncoding(nn.Module):
