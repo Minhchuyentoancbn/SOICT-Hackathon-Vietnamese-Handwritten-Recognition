@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import pytorch_lightning as pl
+import timm
 from torchmetrics.text import CharErrorRate
 from torch.nn import init
 
@@ -96,9 +97,16 @@ class Model(nn.Module):
             self.feature_extractor = DenseNet_FeatureExtractor(img_channel)
         elif feature_extractor == 'aster':
             self.feature_extractor = ResNet_ASTER(img_channel)
+        elif feature_extractor == 'convnext':
+            self.feature_extractor = timm.create_model(
+                'convnext_large_mlp.clip_laion2b_soup_ft_in12k_in1k_320', 
+                pretrained=True, features_only=True,
+            )
     
         if feature_extractor == 'densenet':
             output_channel = 2208
+        elif feature_extractor == 'convnext':
+            output_channel = 768
         elif prediction == 'transocr':
             output_channel = 256
         else:
@@ -116,7 +124,7 @@ class Model(nn.Module):
             self.sequence_modeling = Transforme_Encoder(output_channel, n_position=img_width // 4 + 1)
         elif prediction == 'transocr':
             self.sequence_modeling = LanguageTransformer(
-                num_class, d_model=256, nhead=8,
+                num_class, d_model=output_channel, nhead=8,
                 num_encoder_layers=6, num_decoder_layers=6,
                 dim_feedforward=2048, max_seq_length=50,
                 pos_dropout=0.1, trans_dropout=0.1
@@ -138,7 +146,8 @@ class Model(nn.Module):
             self.prediction = nn.Identity()
 
         # weight initialization
-        initialize_weights(self.feature_extractor)
+        if self.feature_extractor != 'convnext':
+            initialize_weights(self.feature_extractor)
         initialize_weights(self.sequence_modeling)
         initialize_weights(self.adaptive_pool)
         initialize_weights(self.prediction)
@@ -157,7 +166,10 @@ class Model(nn.Module):
             return prediction
 
         # Feature extraction
-        feature_map = self.feature_extractor(images)
+        if self.feature_extractor == 'convnext':
+            feature_map = self.feature_extractor(images)[-2]
+        else:
+            feature_map = self.feature_extractor(images)
         visual_feature = self.dropout(feature_map)  # Dropout
         visual_feature = self.adaptive_pool(visual_feature.permute(0, 3, 1, 2)) # (B, C, H, W) -> (B, W, C, H) -> (B, W, C, 1)
         visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
