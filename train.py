@@ -175,7 +175,7 @@ def train(args):
     # Get the converter
     if args.transformer:
         converter = TokenLabelConverter(args.max_len, args.tone)
-    elif args.prediction == 'ctc':
+    elif args.prediction == 'ctc' or args.prediction == 'svtr':
         converter = CTCLabelConverter(args.tone)
     elif args.prediction == 'attention':
         converter = AttnLabelConverter(args.tone)
