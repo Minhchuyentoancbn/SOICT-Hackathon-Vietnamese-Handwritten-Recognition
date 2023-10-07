@@ -71,7 +71,7 @@ def parse_arguments(argv):
     # Other models
     parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster, convnext')
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
-    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, transocr')
+    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, svtr')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
 
     # Auxiliary loss
@@ -176,7 +176,7 @@ def load_model(name):
     # Get the converter
     if args.transformer:
         converter = TokenLabelConverter(args.max_len, args.tone)
-    elif args.prediction == 'ctc':
+    elif args.prediction == 'ctc' or args.prediction == 'svtr':
         converter = CTCLabelConverter(args.tone)
     elif args.prediction == 'attention':
         converter = AttnLabelConverter(args.tone)
@@ -253,7 +253,7 @@ def predict_train_valid(model, converter, data_loader, args):
                 preds_index = preds_index.view(-1, converter.batch_max_length)
                 length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
                 preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
-            elif args.prediction == 'ctc':
+            elif args.prediction == 'ctc' or args.prediction == 'svtr':
                 preds, _ = model(images, text_for_pred)
                 preds_size = torch.IntTensor([preds.size(1)] * batch_size)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
