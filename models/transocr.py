@@ -14,7 +14,7 @@ class LanguageTransformer(nn.Module):
         self.vocab_size = vocab_size
         self.d_model = d_model
         self.embed_tgt = nn.Embedding(vocab_size + 2, d_model)
-        self.pos_enc = PositionalEncoding(d_model, pos_dropout, max_seq_length)
+        self.pos_enc = PositionalEncoding(d_model, pos_dropout, 100)
 #        self.learned_pos_enc = LearnedPositionalEncoding(d_model, pos_dropout, max_seq_length)
 
         self.transformer = nn.Transformer(d_model, nhead, 
