@@ -14,7 +14,7 @@ from models.srn import Transforme_Encoder, SRN_Decoder, cal_performance
 from models.counter import MarkCounter, UpperCaseCounter
 from models.vitstr import create_vitstr
 from models.resnet_aster import ResNet_ASTER
-from models.transocr import LanguageTransformer
+from models.svtr import SVTRNet
 from timm.optim import create_optimizer_v2
 
 
@@ -84,16 +84,11 @@ class Model(nn.Module):
             self.vitstr = create_vitstr(num_class, model=transformer_model)
             return
 
-        # Feature extraction
-        if prediction == 'transocr':
-            feat_output_channel = 256
-        else:
-            feat_output_channel = 512
 
         if feature_extractor == 'resnet':
-            self.feature_extractor = ResNet_FeatureExtractor(img_channel, feat_output_channel)
+            self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
         elif feature_extractor == 'vgg':
-            self.feature_extractor = VGG_FeatureExtractor(img_channel, feat_output_channel)
+            self.feature_extractor = VGG_FeatureExtractor(img_channel, 512)
         elif feature_extractor == 'densenet':
             self.feature_extractor = DenseNet_FeatureExtractor(img_channel)
         elif feature_extractor == 'aster':
@@ -108,8 +103,6 @@ class Model(nn.Module):
             output_channel = 2208
         elif feature_extractor == 'convnext':
             output_channel = 768
-        elif prediction == 'transocr':
-            output_channel = 256
         else:
             output_channel = 512
 
@@ -123,13 +116,6 @@ class Model(nn.Module):
         # Sequence modeling
         if prediction == 'srn':
             self.sequence_modeling = Transforme_Encoder(output_channel, n_position=img_width // 4 + 1)
-        elif prediction == 'transocr':
-            self.sequence_modeling = LanguageTransformer(
-                num_class, d_model=output_channel, nhead=8,
-                num_encoder_layers=6, num_decoder_layers=6,
-                dim_feedforward=2048, max_seq_length=50,
-                pos_dropout=0.1, trans_dropout=0.1
-            )
         else:
             self.sequence_modeling = nn.Sequential(
                 BidirectionalLSTM(output_channel, 256, 256),
@@ -178,11 +164,6 @@ class Model(nn.Module):
         # Sequence modeling
         if self.predict_method == 'srn':
             contextual_feature = self.sequence_modeling(visual_feature, src_mask=None)[0]
-        elif self.predict_method == 'transocr':
-            if is_train:
-                contextual_feature = self.sequence_modeling(visual_feature.transpose(0, 1), text, tgt_key_padding_mask=tgt_key_padding_mask)
-            else:
-                contextual_feature = self.sequence_modeling.predict(visual_feature.transpose(0, 1), seqlen, bos_id)
         else:
             contextual_feature = self.sequence_modeling(visual_feature)
 
@@ -193,8 +174,6 @@ class Model(nn.Module):
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
         elif self.predict_method == 'srn':
             prediction = self.prediction(contextual_feature)
-        elif self.predict_method == 'transocr':
-            prediction = contextual_feature
 
         return prediction, feature_map
     
@@ -230,8 +209,6 @@ class LightningModel(pl.LightningModule):
                 output_channel = 512
             if args.prediction == 'parseq':
                 output_channel = 384
-            elif args.prediction == 'transocr':
-                output_channel = 256
 
             if args.count_mark:
                 self.mark_counter = MarkCounter(output_channel)
@@ -260,7 +237,7 @@ class LightningModel(pl.LightningModule):
                 self.smoothing = '0'
             else:
                 self.smoothing = '1'
-        elif args.prediction == 'parseq' or args.prediction == 'transocr':
+        elif args.prediction == 'parseq':
             self.criterion = nn.CrossEntropyLoss(ignore_index=converter.pad_id, reduction=reduction, label_smoothing=args.label_smoothing)
 
         # self.loss_train_avg = Averager()
@@ -300,7 +277,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if not (self.args.transformer or self.args.prediction == 'parseq' or self.args.prediction == 'transocr'):
+        if not (self.args.transformer or self.args.prediction == 'parseq'):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
@@ -349,14 +326,6 @@ class LightningModel(pl.LightningModule):
                     tgt_out = torch.where(tgt_out == self.model.eos_id, self.model.pad_id, tgt_out)
                     n = (tgt_out != self.model.pad_id).sum().item()
             loss /= loss_numel
-        elif self.args.prediction == 'transocr':
-            target, tgt_padding_mask = self.converter.get_tgt_paddding_mask(labels, self.args.max_len)
-            tgt_in = target[:, :-1]
-            tgt_out = target[:, 1:]
-            tgt_key_padding_mask = tgt_padding_mask[:, 1:]
-            preds, _ = self.model(images, tgt_in.transpose(0, 1), tgt_key_padding_mask=tgt_key_padding_mask)  # (B, T, C)
-            preds = preds.flatten(end_dim=1)  # (B, T, C) -> (B, T*C)
-            loss = self.criterion(preds, tgt_out.flatten())
 
         # Focal loss
         if self.args.focal_loss:
@@ -404,7 +373,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if self.args.transformer or self.args.prediction == 'parseq' or self.args.prediction == 'transocr':
+        if self.args.transformer or self.args.prediction == 'parseq':
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
         else:
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
@@ -449,15 +418,6 @@ class LightningModel(pl.LightningModule):
             val_loss = self.criterion(preds.flatten(end_dim=1), target.flatten())
             # loss_numel = (target != self.model.pad_id).sum().item()
             # val_loss /= loss_numel
-            _, preds_index = preds.max(2)
-            preds_str = self.converter.decode(preds_index, length_for_pred)
-        elif self.args.prediction == 'transocr':
-            length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
-            # tgt_input = target[:, :-1]
-            tgt_output = target[:, 1:]
-            # tgt_key_padding_mask = tgt_padding_mask[:, 1:]
-            preds, _ = self.model(images, is_train=False, seqlen=self.args.max_len + 1, bos_id=self.converter.bos_id)
-            val_loss = self.criterion(preds.flatten(end_dim=1), tgt_output.flatten())
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
