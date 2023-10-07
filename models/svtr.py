@@ -155,7 +155,7 @@ class Attention(nn.Module):
 
         attn = (q.matmul(k.permute((0, 1, 3, 2))))
         if self.mixer == 'Local':
-            attn += self.mask
+            attn += self.mask.to(attn.device)
         attn = F.softmax(attn, dim=-1)
         attn = self.attn_drop(attn)
 
