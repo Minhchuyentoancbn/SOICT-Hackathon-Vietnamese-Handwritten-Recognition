@@ -360,8 +360,7 @@ class SVTRNet(nn.Module):
             embed_dim=[64, 128, 256],
             depth=[3, 6, 3],
             num_heads=[2, 4, 8],
-            mixer=['Local'] * 6 + ['Global'] *
-            6,  # Local atten, Global atten, Conv
+            mixer=['Local'] * 6 + ['Global'] * 6,  # Local atten, Global atten, Conv
             local_mixer=[[7, 11], [7, 11], [7, 11]],
             patch_merging='Conv',  # Conv, Pool, None
             mlp_ratio=4,
