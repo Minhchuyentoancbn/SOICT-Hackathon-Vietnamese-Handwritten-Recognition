@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 from baseline import Model
 from models.parseq import PARSeq
+from models.abinet import ABINet
 from torchmetrics.text import CharErrorRate
 from argparse import ArgumentParser
 from .converters import CTCLabelConverter, AttnLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter
@@ -209,8 +210,7 @@ def load_model(name):
             pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model,
         )
     elif args.prediction == 'abinet':
-        #TODO: add abinet
-        pass
+        model = ABINet(args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id)
     else:
         model = Model(
             input_channel, args.height, args.width, NUM_CLASSES,
@@ -271,7 +271,7 @@ def predict_train_valid(model, converter, data_loader, args):
                 preds = preds[2]
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, length_for_pred)
-            elif args.prediction == 'parseq':
+            elif args.prediction == 'parseq' or args.prediction == 'abinet':
                 preds = model(images)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
                 preds_str = converter.decode(preds_index, length_for_pred)
@@ -286,7 +286,7 @@ def predict_train_valid(model, converter, data_loader, args):
                     pred_EOS = pred.find('[s]')
                     pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
                     pred_max_prob = pred_max_prob[:pred_EOS]
-                elif args.prediction == 'srn' or args.prediction == 'parseq':
+                elif args.prediction == 'srn' or args.prediction == 'parseq' or args.prediction == 'abinet':
                     pred_EOS = len(pred)
                     pred_max_prob = pred_max_prob[:pred_EOS]
                 try:
