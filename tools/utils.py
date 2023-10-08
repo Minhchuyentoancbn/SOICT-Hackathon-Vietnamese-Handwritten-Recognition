@@ -210,7 +210,7 @@ def load_model(name):
             pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model,
         )
     elif args.prediction == 'abinet':
-        model = ABINet(args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id)
+        model = ABINet(args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, args.weight_decay)
     else:
         model = Model(
             input_channel, args.height, args.width, NUM_CLASSES,
