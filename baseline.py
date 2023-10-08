@@ -72,8 +72,11 @@ class Model(nn.Module):
 
         # Transformation
         if stn_on:
+            output_size = (img_height, img_width)
+            if prediction == 'svtr':
+                output_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
-                20, (img_height, img_width), (img_height, img_width), img_channel
+                20, (img_height, img_width), output_size, img_channel
             )
         else:
             self.tps = nn.Identity()
