@@ -255,7 +255,7 @@ class LightningModel(pl.LightningModule):
                 self.smoothing = '0'
             else:
                 self.smoothing = '1'
-        elif args.prediction == 'parseq':
+        elif args.prediction == 'parseq' or args.prediction == 'abinet':
             self.criterion = nn.CrossEntropyLoss(ignore_index=converter.pad_id, reduction=reduction, label_smoothing=args.label_smoothing)
 
         # self.loss_train_avg = Averager()
@@ -295,7 +295,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if not (self.args.transformer or self.args.prediction == 'parseq'):
+        if not (self.args.transformer or self.args.prediction == 'parseq' or self.args.prediction == 'abinet'):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
@@ -344,6 +344,18 @@ class LightningModel(pl.LightningModule):
                     tgt_out = torch.where(tgt_out == self.model.eos_id, self.model.pad_id, tgt_out)
                     n = (tgt_out != self.model.pad_id).sum().item()
             loss /= loss_numel
+        elif self.args.prediction == 'abinet':
+            inputs, lengths, targets = self.model._prepare_inputs_and_targets(labels)
+            if self._pretraining:
+                v_res = self.model.model.vision(images)
+                l_res = self.model.model.language(inputs, lengths)
+                a_res = self.model.model.alignment(l_res['feature'].detach(), v_res['feature'].detach())
+                loss = self.model.calc_loss(self.criterion, targets, v_res, l_res, a_res)
+            else:
+                if self.model._reset_aligment:
+                    self.model.reset_alignment()
+                all_a_res, all_l_res, v_res = self.model.model.forward(images)
+                loss = self.model.calc_loss(self.criterion, targets, v_res, all_l_res, all_a_res)
 
         # Focal loss
         if self.args.focal_loss:
@@ -391,7 +403,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if self.args.transformer or self.args.prediction == 'parseq':
+        if self.args.transformer or self.args.prediction == 'parseq' or self.args.prediction == 'abinet':
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
         else:
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
@@ -438,6 +450,13 @@ class LightningModel(pl.LightningModule):
             # val_loss /= loss_numel
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
+        elif self.args.prediction == 'abinet':
+            length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
+            target = target[:, 1:]
+            max_len = target.shape[1] - 1
+            preds = self.model.forward(images, max_len)
+            val_loss = self.criterion(preds.flatten(end_dim=1), target.flatten())
+            _, preds_index = preds.max(2)
 
 
         # Focal loss
@@ -500,6 +519,8 @@ class LightningModel(pl.LightningModule):
                 params = self.filtered_parameters
             elif self.args.prediction == 'parseq':
                 params = self.model.parameters()
+            elif self.args.prediction == 'abinet':
+                params = self.model.learnable_params()
             else:
                 params = self.parameters()
 
@@ -540,6 +561,12 @@ class LightningModel(pl.LightningModule):
             return [optimizer, ], [scheduler, ]
 
         return optimizer
+    
+    @property
+    def _pretraining(self):
+        # In the original work, VM was pretrained for 8 epochs while full model was trained for an additional 10 epochs.
+        total_steps = self.trainer.estimated_stepping_batches
+        return self.global_step < (8 / (8 + 10)) * total_steps
     
 
 def initialize_weights(model):
