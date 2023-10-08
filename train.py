@@ -132,7 +132,7 @@ def get_data(
     if args.synth:
         synth_dataset = HandWrittenDataset(
             SYNTH_TRAIN_DIR, SYNTH_LABEL_FILE,
-            name='gen_image', transform=test_transform
+            name='gen_image', transform=test_transform if not args.synth_augment else train_transform
         )
         print('Using SynthText data for training')
 

@@ -54,6 +54,7 @@ def parse_arguments(argv):
     # SynthText
     parser.add_argument('--synth', type=int, default=0, help='Whether to use SynthText or not, default: 0 (not use SynthText)')
     parser.add_argument('--num_synth', type=int, default=0, help='Number of SynthText samples to train on, default: 0 (all samples)')
+    parser.add_argument('--synth_augment', type=int, default=0, help='Whether to use SynthText augmentation or not, default: 0 (not use SynthText augmentation)')
 
     # Model hyperparameters
     # VitSTR
@@ -71,7 +72,7 @@ def parse_arguments(argv):
     # Other models
     parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster, convnext')
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
-    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, svtr')
+    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, svtr, abinet')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
 
     # Auxiliary loss
@@ -182,7 +183,7 @@ def load_model(name):
         converter = AttnLabelConverter(args.tone)
     elif args.prediction == 'srn':
         converter = SRNConverter(args.tone)
-    elif args.prediction == 'parseq' or args.prediction == 'transocr':
+    elif args.prediction == 'parseq' or args.prediction == 'abinet':
         converter = ParseqConverter(args.tone)
         
     NUM_CLASSES = converter.num_classes
@@ -207,6 +208,9 @@ def load_model(name):
             embed_dim=embed_dim, enc_num_heads=num_heads, patch_size=args.patch_size, refine_iters=args.refine_iters,
             pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model,
         )
+    elif args.prediction == 'abinet':
+        #TODO: add abinet
+        pass
     else:
         model = Model(
             input_channel, args.height, args.width, NUM_CLASSES,
@@ -285,7 +289,6 @@ def predict_train_valid(model, converter, data_loader, args):
                 elif args.prediction == 'srn' or args.prediction == 'parseq':
                     pred_EOS = len(pred)
                     pred_max_prob = pred_max_prob[:pred_EOS]
-
                 try:
                     confidence_score = pred_max_prob.cumprod(dim=0)[-1]
                     confidences.append(confidence_score.item())
