@@ -26,4 +26,6 @@ scripts/*.sh
 models/timm/
 deep-text-recognition-benchmark/
 
+data/synthesis_2/
+
 steel_ocr-main/
