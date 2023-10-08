@@ -15,6 +15,7 @@ from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SR
 from baseline import Model, LightningModel
 from test import predict
 from models.parseq import PARSeq
+from models.abinet import ABINet
 
 
 def get_data(
@@ -181,7 +182,7 @@ def train(args):
         converter = AttnLabelConverter(args.tone)
     elif args.prediction == 'srn':
         converter = SRNConverter(args.tone)
-    elif args.prediction == 'parseq' or args.prediction == 'transocr':
+    elif args.prediction == 'parseq' or args.prediction == 'abinet':
         converter = ParseqConverter(args.tone)
         
     NUM_CLASSES = converter.num_classes
@@ -206,6 +207,8 @@ def train(args):
             embed_dim=embed_dim, enc_num_heads=num_heads, patch_size=args.patch_size, refine_iters=args.refine_iters,
             pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model
         )
+    elif args.prediction == 'abinet': # Use ABINet
+        model = ABINet(args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id,)
     else:  
         model = Model(
             input_channel, args.height, args.width, NUM_CLASSES,
