@@ -198,6 +198,7 @@ class ABINet(nn.Module):
         self.eos_id = eos_id
         self.max_label_length = max_label_length
         self.num_classes = num_classes
+        self._reset_aligment = True
 
         self.model = ABINetIterModel(
             max_label_length, self.eos_id, num_classes, iter_size,
@@ -242,7 +243,25 @@ class ABINet(nn.Module):
         inputs = F.one_hot(inputs, self.num_classes).float()
         lengths = torch.as_tensor(list(map(len, labels)), device=self.device) + 1  # +1 for eos
         return inputs, lengths, targets
-
+    
+    def calc_loss(self, criterion, targets, *res_lists):
+        total_loss = 0
+        for res_list in res_lists:
+            loss = 0
+            if isinstance(res_list, dict):
+                res_list = [res_list]
+            for res in res_list:
+                logits = res['logits'].flatten(end_dim=1)
+                loss += criterion(logits, targets.flatten())
+            loss /= len(res_list)
+            self.log('loss_' + res_list[0]['name'], loss)
+            total_loss += res_list[0]['loss_weight'] * loss
+        return total_loss
+    
+    def reset_alignment(self):
+        print('Pretraining ends. Resetting alignment model.')
+        self._reset_aligment = False
+        self.model.alignment.apply(init_weights)
 
 
 
