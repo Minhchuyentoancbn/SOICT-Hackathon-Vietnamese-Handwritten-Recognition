@@ -183,7 +183,7 @@ class ABINetIterModel(nn.Module):
 
 class ABINet(nn.Module):
     def __init__(
-        self, max_label_length: int, num_classes: int, pad_id: int, bos_id: int, eos_id: int,
+        self, max_label_length: int, num_classes: int, pad_id: int, bos_id: int, eos_id: int, weight_decay: float = 0.0,
         iter_size: int = 3, d_model: int = 512, d_inner: int = 2048,
         dropout: float = 0.1, activation: str = 'relu', nhead: int = 8,
         v_loss_weight: float = 1.0, v_attention: str = 'position', v_attention_mode: str = 'nearest', 
@@ -192,6 +192,7 @@ class ABINet(nn.Module):
         a_loss_weight: float = 1.0, lm_only: bool = False, **kwargs
     ):
         super().__init__()
+        self.weight_decay = weight_decay
         self.pad_id = pad_id
         self.bos_id = bos_id
         self.eos_id = eos_id
@@ -215,7 +216,6 @@ class ABINet(nn.Module):
             return param_groups_weight_decay(model, self.weight_decay, skip_list)
         else:
             return [{'params': model.parameters()}]
-        
 
     def learnable_params(self):
         params = []
