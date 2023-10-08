@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import pytorch_lightning as pl
 import timm
@@ -73,10 +74,12 @@ class Model(nn.Module):
         # Transformation
         if stn_on:
             output_size = (img_height, img_width)
+            input_size = (img_height, img_width)
             if prediction == 'svtr':
+                input_size = (32, 64)
                 output_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
-                20, (img_height, img_width), output_size, img_channel
+                20, input_size, output_size, img_channel
             )
         else:
             self.tps = nn.Identity()
@@ -96,6 +99,7 @@ class Model(nn.Module):
                 num_heads=[6, 8, 16],
                 out_channels=384,
                 mixer=['Local'] * 10 + ['Global'] * 11,
+                last_stage=True, prenorm=False
             )
         elif feature_extractor == 'resnet':
             self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
@@ -165,6 +169,9 @@ class Model(nn.Module):
         # Transformation
         if seqlen is None:
             seqlen = self.max_len
+
+        if self.predict_method == 'svtr':
+            images = F.interpolate(images, (32, 64), mode='bilinear', align_corners=True)
         images = self.tps(images)
 
         # For ViTSTR
