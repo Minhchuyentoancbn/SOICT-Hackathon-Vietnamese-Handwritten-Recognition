@@ -250,8 +250,10 @@ class LightningModel(pl.LightningModule):
         # Criterion
         if args.transformer or args.prediction == 'attention':
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing, reduction=reduction)
-        elif args.prediction == 'ctc' or args.prediction == 'svtr':
+        elif args.prediction == 'ctc':
             self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
+        elif args.prediction == 'svtr':
+            self.criterion = nn.CTCLoss(reduction=reduction)
         elif args.prediction == 'srn':
             self.criterion = cal_performance
             if args.label_smoothing > 0:
