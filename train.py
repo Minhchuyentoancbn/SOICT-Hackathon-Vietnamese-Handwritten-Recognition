@@ -137,7 +137,7 @@ def get_data(
         print('Using SynthText data for training')
 
         # Filter out the long labels
-        synth_label_file = pd.read_csv('data/annotation2.txt', sep='\t', header=None, na_filter=False)
+        synth_label_file = pd.read_csv(SYNTH_LABEL_FILE, sep='\t', header=None, na_filter=False)
         if args.tone:
             synth_label_file[1] = synth_label_file[1].apply(tone_encode)
         synth_inds =  np.arange(len(synth_dataset))[(synth_label_file[1].str.len() < args.max_len)]
