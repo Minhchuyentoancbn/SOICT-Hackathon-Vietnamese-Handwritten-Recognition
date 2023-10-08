@@ -89,7 +89,7 @@ class Model(nn.Module):
 
         if prediction == 'svtr':
             self.feature_extractor = SVTRNet(
-                img_size=(img_height, img_width),
+                img_size=(32, 100),
                 in_channels=img_channel,
                 embed_dim=[192, 256, 512],
                 depth=[3, 9, 9],
