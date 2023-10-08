@@ -509,6 +509,10 @@ class SVTRNet(nn.Module):
             nn.init.zeros_(m.bias)
             nn.init.ones_(m.weight)
 
+    @torch.jit.ignore
+    def no_weight_decay(self):
+        return {'pos_embed', 'norm'}
+
     def forward_features(self, x):
         x = self.patch_embed(x)
         x = x + self.pos_embed
