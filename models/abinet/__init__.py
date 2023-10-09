@@ -237,7 +237,7 @@ class ABINet(nn.Module):
     def _prepare_inputs_and_targets(self, labels, converter):
         # Use dummy label to ensure sequence length is constant.
         dummy = ['0' * self.max_label_length]
-        targets = converter.encode(dummy + list(labels), self.device)[1:]
+        targets = converter.encode(labels)
         targets = targets[:, 1:]  # remove <bos>. Unused here.
         # Inputs are padded with eos_id
         inputs = torch.where(targets == self.pad_id, self.eos_id, targets)
