@@ -255,7 +255,6 @@ class ABINet(nn.Module):
                 logits = res['logits'].flatten(end_dim=1)
                 loss += criterion(logits, targets.flatten())
             loss /= len(res_list)
-            self.log('loss_' + res_list[0]['name'], loss)
             total_loss += res_list[0]['loss_weight'] * loss
         return total_loss
     
