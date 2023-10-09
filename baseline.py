@@ -100,7 +100,6 @@ class Model(nn.Module):
                 out_channels=384,
                 mixer=['Local'] * 10 + ['Global'] * 11,
                 last_stage=True, prenorm=False,
-                out_char_num=50
             )
         elif feature_extractor == 'resnet':
             self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
