@@ -152,18 +152,18 @@ def get_data(
     train_loader = DataLoader(
         train_set, batch_size=batch_size,
         shuffle=True, drop_last=True, collate_fn=collate_fn,
-        pin_memory=True, num_workers=2
+        num_workers=2, pin_memory=args.pin_memory
     )
     if args.train:
         val_loader = DataLoader(
             val_set, batch_size=batch_size, shuffle=False, collate_fn=collate_fn,
-            pin_memory=True, num_workers=2
+            num_workers=2, pin_memory=args.pin_memory
         )
     else:
         val_loader = None
 
     test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=2
+        test_dataset, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=args.pin_memory
     )
 
     return train_loader, val_loader, test_loader, train_dataset, val_dataset, test_dataset
