@@ -489,7 +489,7 @@ class SVTRNet(nn.Module):
             self.hardswish = nn.Hardswish()
             self.dropout = nn.Dropout(p=last_drop)
         if not prenorm:
-            self.norm = eval(norm_layer)(embed_dim[-1], epsilon=epsilon)
+            self.norm = eval(norm_layer)(embed_dim[-1], eps=epsilon)
         self.use_lenhead = use_lenhead
         if use_lenhead:
             self.len_conv = nn.Linear(embed_dim[2], self.out_channels)
