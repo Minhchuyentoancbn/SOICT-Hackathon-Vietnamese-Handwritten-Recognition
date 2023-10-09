@@ -355,7 +355,7 @@ class LightningModel(pl.LightningModule):
                     n = (tgt_out != self.model.pad_id).sum().item()
             loss /= loss_numel
         elif self.args.prediction == 'abinet':
-            inputs, lengths, targets = self.model._prepare_inputs_and_targets(labels)
+            inputs, lengths, targets = self.model._prepare_inputs_and_targets(labels, self.converter)
             if self._pretraining:
                 v_res = self.model.model.vision(images)
                 l_res = self.model.model.language(inputs, lengths)
