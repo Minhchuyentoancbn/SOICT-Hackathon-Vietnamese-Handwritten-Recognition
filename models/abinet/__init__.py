@@ -207,6 +207,7 @@ class ABINet(nn.Module):
             l_loss_weight, l_num_layers, l_detach, l_use_self_attn, a_loss_weight
         )
         self.model.apply(init_weights)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     @torch.jit.ignore
     def no_weight_decay(self):
