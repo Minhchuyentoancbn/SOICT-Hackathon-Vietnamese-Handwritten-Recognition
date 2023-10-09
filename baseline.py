@@ -467,7 +467,7 @@ class LightningModel(pl.LightningModule):
             preds = self.model.forward(images, max_len)
             val_loss = self.criterion(preds.flatten(end_dim=1), target.flatten())
             _, preds_index = preds.max(2)
-
+            preds_str = self.converter.decode(preds_index, length_for_pred)
 
         # Focal loss
         if self.args.focal_loss:
