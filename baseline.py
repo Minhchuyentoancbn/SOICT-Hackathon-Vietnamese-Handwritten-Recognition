@@ -75,7 +75,7 @@ class Model(nn.Module):
         if stn_on:
             output_size = (img_height, img_width)
             input_size = (img_height, img_width)
-            if prediction == 'svtr':
+            if feature_extractor == 'svtr':
                 output_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
                 20, input_size, output_size, img_channel
@@ -89,7 +89,7 @@ class Model(nn.Module):
             self.vitstr = create_vitstr(num_class, model=transformer_model)
             return
 
-        if prediction == 'svtr':
+        if feature_extractor == 'svtr':
             self.feature_extractor = SVTRNet(
                 img_size=(32, 100),
                 in_channels=img_channel,
@@ -118,6 +118,8 @@ class Model(nn.Module):
             output_channel = 2208
         elif feature_extractor == 'convnext':
             output_channel = 768
+        elif feature_extractor == 'svtr':
+            output_channel = 384
         else:
             output_channel = 512
 
@@ -135,7 +137,7 @@ class Model(nn.Module):
         # Sequence modeling
         if prediction == 'srn':
             self.sequence_modeling = Transforme_Encoder(output_channel, n_position=img_width // 4 + 1)
-        elif prediction == 'svtr':
+        elif prediction == 'ctc' and feature_extractor == 'svtr':
             self.sequence_modeling = nn.Identity()
         else:
             self.sequence_modeling = nn.Sequential(
@@ -145,18 +147,19 @@ class Model(nn.Module):
 
         # Prediction
         if prediction == 'ctc':
-            self.prediction = nn.Linear(256, num_class)
+            if feature_extractor == 'svtr':
+                self.prediction = nn.Linear(output_channel, num_class)
+            else:
+                self.prediction = nn.Linear(256, num_class)
         elif prediction == 'attention':
             self.prediction = Attention(256, 256, num_class)
         elif prediction == 'srn':
             self.prediction = SRN_Decoder(n_position=img_width // 4 + 1, N_max_character=max_len + 1, n_class=num_class)
-        elif prediction == 'svtr':
-            self.prediction = nn.Linear(384, num_class)
         else:
             self.prediction = nn.Identity()
 
         # weight initialization
-        if feature_extractor != 'convnext' and prediction != 'svtr':
+        if feature_extractor != 'convnext' and feature_extractor != 'svtr':
             initialize_weights(self.feature_extractor)
         initialize_weights(self.sequence_modeling)
         initialize_weights(self.adaptive_pool)
@@ -182,7 +185,7 @@ class Model(nn.Module):
         else:
             feature_map = self.feature_extractor(images)
         visual_feature = self.dropout(feature_map)  # Dropout
-        if self.predict_method != 'svtr':
+        if self.extractor_type == 'svtr':
             visual_feature = self.adaptive_pool(visual_feature.permute(0, 3, 1, 2)) # (B, C, H, W) -> (B, W, C, H) -> (B, W, C, 1)
             visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
 
@@ -193,7 +196,7 @@ class Model(nn.Module):
             contextual_feature = self.sequence_modeling(visual_feature)
 
         # Prediction
-        if self.predict_method == 'ctc' or self.predict_method == 'svtr':
+        if self.predict_method == 'ctc':
             prediction = self.prediction(contextual_feature.contiguous())
         elif self.predict_method == 'attention':
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
@@ -254,7 +257,7 @@ class LightningModel(pl.LightningModule):
         # Criterion
         if args.transformer or args.prediction == 'attention':
             self.criterion = nn.CrossEntropyLoss(ignore_index=0, label_smoothing=args.label_smoothing, reduction=reduction)
-        elif args.prediction == 'ctc' or args.prediction == 'svtr':
+        elif args.prediction == 'ctc':
             self.criterion = nn.CTCLoss(zero_infinity=True, reduction=reduction)
         elif args.prediction == 'srn':
             self.criterion = cal_performance
@@ -311,7 +314,7 @@ class LightningModel(pl.LightningModule):
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
             preds = self.model(images, text=target, seqlen=self.converter.batch_max_length)
             loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
-        elif self.args.prediction == 'ctc' or self.args.prediction == 'svtr':
+        elif self.args.prediction == 'ctc':
             preds, visual_feature = self.model(images, text)
             preds_size = torch.IntTensor([preds.size(1)] * batch_size)
             preds = preds.log_softmax(2).permute(1, 0, 2) # (B, T, C) -> (T, B, C)
@@ -427,7 +430,7 @@ class LightningModel(pl.LightningModule):
             val_loss = self.criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
             length_for_pred = torch.IntTensor([self.converter.batch_max_length - 1] * batch_size)
             preds_str = self.converter.decode(preds_index[:, 1:], length_for_pred)
-        elif self.args.prediction == 'ctc' or self.args.prediction == 'svtr':
+        elif self.args.prediction == 'ctc':
             preds, visual_feature = self.model(images, text_for_pred)
             pred_size = torch.IntTensor([preds.size(1)] * batch_size)
             val_loss = self.criterion(preds.log_softmax(2).permute(1, 0, 2), text_for_loss, pred_size, length_for_loss)
