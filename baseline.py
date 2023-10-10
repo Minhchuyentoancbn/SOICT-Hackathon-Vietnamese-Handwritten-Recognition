@@ -124,12 +124,12 @@ class Model(nn.Module):
             output_channel = 512
 
         # Dropout and adaptive pooling after feature extraction
-        if dropout > 0 and prediction != 'svtr':
+        if dropout > 0:
             self.dropout = nn.Dropout(dropout)
         else:
             self.dropout = nn.Identity()
 
-        if prediction != 'svtr':
+        if feature_extractor != 'svtr':
             self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
         else:
             self.adaptive_pool = nn.Identity()
