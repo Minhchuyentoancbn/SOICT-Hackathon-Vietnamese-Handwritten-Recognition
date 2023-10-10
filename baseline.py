@@ -76,7 +76,6 @@ class Model(nn.Module):
             output_size = (img_height, img_width)
             input_size = (img_height, img_width)
             if prediction == 'svtr':
-                input_size = (32, 64)
                 output_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
                 20, input_size, output_size, img_channel
@@ -170,8 +169,6 @@ class Model(nn.Module):
         if seqlen is None:
             seqlen = self.max_len
 
-        if self.predict_method == 'svtr':
-            images = F.interpolate(images, (32, 64), mode='bilinear', align_corners=True)
         images = self.tps(images)
 
         # For ViTSTR
