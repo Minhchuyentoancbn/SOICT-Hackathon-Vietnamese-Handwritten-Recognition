@@ -64,7 +64,7 @@ def predict(model, dataloader, converter, prediction, max_length=25, transformer
                 preds_index = preds_index.view(-1, converter.batch_max_length)
                 length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
                 preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
-            elif prediction == 'ctc' or prediction == 'svtr':
+            elif prediction == 'ctc':
                 preds, _ = model(images, text_for_pred)
                 preds_size = torch.IntTensor([preds.size(1)] * batch_size)
                 _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
