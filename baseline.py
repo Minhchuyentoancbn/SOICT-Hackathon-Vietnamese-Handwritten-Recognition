@@ -137,7 +137,7 @@ class Model(nn.Module):
         # Sequence modeling
         if prediction == 'srn':
             self.sequence_modeling = Transforme_Encoder(output_channel, n_position=img_width // 4 + 1)
-        elif prediction == 'ctc' and feature_extractor == 'svtr':
+        elif feature_extractor == 'svtr':
             self.sequence_modeling = nn.Identity()
         else:
             self.sequence_modeling = nn.Sequential(
@@ -152,7 +152,10 @@ class Model(nn.Module):
             else:
                 self.prediction = nn.Linear(256, num_class)
         elif prediction == 'attention':
-            self.prediction = Attention(256, 256, num_class)
+            if feature_extractor == 'svtr':
+                self.prediction = Attention(output_channel, output_channel, num_class)
+            else:
+                self.prediction = Attention(256, 256, num_class)
         elif prediction == 'srn':
             self.prediction = SRN_Decoder(n_position=img_width // 4 + 1, N_max_character=max_len + 1, n_class=num_class)
         else:
