@@ -185,7 +185,7 @@ class Model(nn.Module):
         else:
             feature_map = self.feature_extractor(images)
         visual_feature = self.dropout(feature_map)  # Dropout
-        if self.extractor_type == 'svtr':
+        if self.extractor_type != 'svtr':
             visual_feature = self.adaptive_pool(visual_feature.permute(0, 3, 1, 2)) # (B, C, H, W) -> (B, W, C, H) -> (B, W, C, 1)
             visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
 
