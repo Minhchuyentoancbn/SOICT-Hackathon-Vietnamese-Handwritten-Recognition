@@ -77,7 +77,7 @@ class ResTranformer(nn.Module):
     def __init__(self, d_model=512, nhead=8, d_inner=2048, dropout=0.1, activation='relu', backbone_ln=2):
         super().__init__()
         self.resnet = resnet45()
-        self.pos_encoder = PositionalEncoding(d_model, max_len=8 * 32)
+        self.pos_encoder = PositionalEncoding(d_model, max_len=2000)
         encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead,
                                                 dim_feedforward=d_inner, dropout=dropout, activation=activation)
         self.transformer = nn.TransformerEncoder(encoder_layer, backbone_ln)
