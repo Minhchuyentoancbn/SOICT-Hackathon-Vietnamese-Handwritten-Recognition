@@ -71,6 +71,9 @@ def parse_arguments(argv):
     parser.add_argument('--patch_size', type=int, nargs='+', default=[4, 8], help='Patch size for Parseq, default: [4, 8]')
     parser.add_argument('--refine_iters', type=int, default=1, help='Number of refinement iterations, default: 1')
 
+    # ABINet
+    parser.add_argument('--abinet_v_backbone', type=str, default='transformer', help='V-backbone for ABINet, default: transformer, options: transformer, resnet')
+
     # Other models
     parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster, convnext, svtr')
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
@@ -211,7 +214,10 @@ def load_model(name):
             pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model,
         )
     elif args.prediction == 'abinet':
-        model = ABINet(args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, args.weight_decay)
+        model = ABINet(
+            args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
+            args.weight_decay, v_backbone=args.abinet_v_backbone,
+        )
     else:
         model = Model(
             input_channel, args.height, args.width, NUM_CLASSES,

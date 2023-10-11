@@ -208,7 +208,10 @@ def train(args):
             pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model
         )
     elif args.prediction == 'abinet': # Use ABINet
-        model = ABINet(args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, args.weight_decay)
+        model = ABINet(
+            args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
+            args.weight_decay, v_backbone=args.abinet_v_backbone,
+        )
     else:  
         model = Model(
             input_channel, args.height, args.width, NUM_CLASSES,
