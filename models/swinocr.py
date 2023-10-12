@@ -50,13 +50,13 @@ class SwinTransformerOCR(nn.Module):
         encoded = self.encoder(x)[0]
         dec = self.decoder.generate(torch.LongTensor([self.bos_token]*len(x))[:, None].to(x.device), self.max_seq_len,
                                     eos_token=self.eos_token, context=encoded, temperature=self.temperature)
-        return dec
+        return dec, encoded
     
-    
+
     @torch.no_grad()
     def predict(self, image):
-        dec = self(image)
-        pred = self.tokenizer.decode(dec)
+        dec, _ = self(image)
+        pred = self.converter.decode(dec)
         return pred
 
     
@@ -108,15 +108,3 @@ class CustomARWrapper(AutoregressiveWrapper):
 
         self.net.train(was_training)
         return out
-
-    
-
-if __name__ == '__main__':
-    model = SwinTransformerOCR()
-    # print(model.encoder)
-    x = torch.randn(16, 3, 224, 224)
-    y = model(x)
-    print(y.shape)  # (16, 14, 14, 512)
-
-    # COunt params
-    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
