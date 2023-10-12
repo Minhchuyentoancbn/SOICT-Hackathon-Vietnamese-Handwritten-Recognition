@@ -298,3 +298,59 @@ class ParseqConverter(object):
         tgt_mask = tgt_mask.to(device)
         # tgt_mask = tgt_mask[:, :-1]
         return batch_text, tgt_mask
+    
+
+class TransOCRConverter(object):
+    """ Convert between text-label and text-index """
+
+    def __init__(self, max_len=25, tone=False):
+        self.to_tone = tone
+        # character (str): set of the possible characters.
+        # [GO] for the start token of the attention decoder. [s] for end-of-sentence token.
+        character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        self.EOS = '[E]'
+        self.BOS = '[B]'
+        self.PAD = '[P]'
+
+        self.list_token = [self.PAD, self.BOS, self.EOS]
+        self.character = self.list_token + list(character)
+        self.num_classes = len(self.character)
+
+        self.dict = {word: i for i, word in enumerate(self.character)}
+
+        self.eos_id = self.dict[self.EOS]
+        self.bos_id = self.dict[self.BOS]
+        self.pad_id = self.dict[self.PAD]
+        
+        self.batch_max_length = max_len + len(self.list_token)  # +2 for [GO] and [s] at end of sentence.
+
+
+    def encode(self, text, batch_max_length=25):
+        """ 
+        Convert text-label into text-index and create target mask for Transformer.
+        """
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
+        length = [len(s) + 2 for s in text]  # +2 for [GO] and [s] at end of sentence.
+        batch_text = torch.LongTensor(len(text), batch_max_length + 2).fill_(self.pad_id)
+        for i, t in enumerate(text):
+            txt = [self.BOS] + list(t) + [self.EOS]
+            txt = [self.dict[char] for char in txt]
+            batch_text[i][:len(txt)] = torch.LongTensor(txt)  # batch_text[:, 0] = [GO] token
+
+        mask = batch_text != self.pad_id
+        return batch_text.to(device), mask.to(device)
+
+    def decode(self, text_index, length):
+        """ convert text-index into text-label. """
+        texts = []
+        for index, l in enumerate(length):
+            text = ''.join([self.character[i] for i in text_index[index, :]])
+            idx = text.find(self.EOS)
+            text = text[:idx]
+            if self.to_tone:
+                text = tone_decode(text)
+            texts.append(text)
+        return texts
