@@ -1,4 +1,5 @@
 import torch
+import random
 from .text_tools import tone_decode, tone_encode
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -299,3 +300,71 @@ class ParseqConverter(object):
         # tgt_mask = tgt_mask[:, :-1]
         return batch_text, tgt_mask
     
+
+class CPPDConverter(object):
+    """ Convert between text-label and text-index """
+
+    def __init__(self, tone=False, ignore_index=200):
+        max_len = 25
+        self.to_tone = tone
+        # character (str): set of the possible characters.
+        # [GO] for the start token of the attention decoder. [s] for end-of-sentence token.
+        character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        self.EOS = '[E]'
+        self.BOS = '[B]'
+
+        self.character = ['</s>'] + list(character)
+        self.num_classes = len(self.character)
+
+        self.dict = {word: i for i, word in enumerate(self.character)}
+        self.batch_max_length = max_len
+        self.ignore_index = ignore_index
+
+
+    def encode(self, text, batch_max_length=25):
+        """ 
+        Convert text-label into text-index.
+        """
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
+
+        length = [len(s) for s in text]
+        batch_text = torch.LongTensor(len(text), batch_max_length + 1).fill_(self.ignore_index)
+        label_node = []
+
+        for i, t in enumerate(text):
+            txt, txt_node = self.text_encode(t)
+            txt_pos_node = [1] * (len(txt) + 1) + [0] * (self.batch_max_length - len(text))
+            txt.append(0)  # eos
+            txt = txt + [self.ignore_index] * (self.batch_max_length + 1 - len(txt))
+            label_node.append(txt_node + txt_pos_node)
+            batch_text[i][:len(txt)] = torch.LongTensor(txt)
+        return batch_text.to(device), torch.IntTensor(label_node).to(device), torch.IntTensor(length).to(device)
+    
+
+    def text_encode(self, text):
+        text_list = []
+        text_node = [0 for _ in range(self.num_classes)]
+        text_node[0] = 1
+
+        for char in text:
+            i_c = self.dict[char]
+            text_list.append(i_c)
+            text_node[i_c] += 1
+
+        return text_list, text_node
+
+
+    def decode(self, text_index, length):
+        """ convert text-index into text-label. """
+        texts = []
+        for index, l in enumerate(length):
+            text = ''.join([self.character[i] for i in text_index[index, :]])
+            idx = text.find('</s>')
+            text = text[:idx]
+            if self.to_tone:
+                text = tone_decode(text)
+            texts.append(text)
+        return texts
