@@ -16,6 +16,7 @@ from models.counter import MarkCounter, UpperCaseCounter
 from models.vitstr import create_vitstr
 from models.resnet_aster import ResNet_ASTER
 from models.svtr import SVTRNet
+from models.cppd import CPPDHead, CPPDLoss
 from timm.optim import create_optimizer_v2
 
 
@@ -164,6 +165,8 @@ class Model(nn.Module):
                 self.prediction = Attention(256, 256, num_class)
         elif prediction == 'srn':
             self.prediction = SRN_Decoder(n_position=img_width // 4 + 1, N_max_character=max_len + 1, n_class=num_class)
+        elif prediction == 'cppd':
+            self.prediction = CPPDHead(output_channel, num_class, max_len=max_len)
         else:
             self.prediction = nn.Identity()
 
@@ -209,7 +212,7 @@ class Model(nn.Module):
             prediction = self.prediction(contextual_feature.contiguous())
         elif self.predict_method == 'attention':
             prediction = self.prediction(contextual_feature.contiguous(), text, is_train, seqlen)
-        elif self.predict_method == 'srn':
+        elif self.predict_method == 'srn' or self.predict_method == 'cppd':
             prediction = self.prediction(contextual_feature)
 
         return prediction, feature_map
@@ -276,6 +279,8 @@ class LightningModel(pl.LightningModule):
                 self.smoothing = '1'
         elif args.prediction == 'parseq' or args.prediction == 'abinet':
             self.criterion = nn.CrossEntropyLoss(ignore_index=converter.pad_id, reduction=reduction, label_smoothing=args.label_smoothing)
+        elif args.prediction == 'cppd':
+            self.criterion = CPPDLoss(args.label_smoothing > 0, converter.ignore_index)
 
         # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
@@ -314,7 +319,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if not (self.args.transformer or self.args.prediction == 'parseq' or self.args.prediction == 'abinet'):
+        if not (self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'cppd']):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
@@ -375,6 +380,10 @@ class LightningModel(pl.LightningModule):
                     self.model.reset_alignment()
                 all_a_res, all_l_res, v_res = self.model.model.forward(images)
                 loss = self.model.calc_loss(self.criterion, targets, v_res, all_l_res, all_a_res)
+        elif self.args.prediction == 'cppd':
+            target_batch = self.converter.encode(labels, batch_max_length=self.args.max_len)
+            preds = self.model(images)
+            loss = self.criterion(preds, target_batch)['loss']
 
         # Focal loss
         if self.args.focal_loss:
@@ -422,9 +431,9 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if self.args.transformer or self.args.prediction == 'parseq' or self.args.prediction == 'abinet':
+        if self.args.transformer or self.args.prediction in ['parseq', 'abinet']:
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
-        else:
+        elif self.args.prediction != 'cppd':
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
             text_for_pred = torch.LongTensor(batch_size, self.args.max_len + 1).fill_(0)
             text_for_loss, length_for_loss = self.converter.encode(labels, batch_max_length=self.args.max_len)
@@ -475,6 +484,14 @@ class LightningModel(pl.LightningModule):
             max_len = target.shape[1] - 1
             preds = self.model.forward(images, max_len)
             val_loss = self.criterion(preds.flatten(end_dim=1), target.flatten())
+            _, preds_index = preds.max(2)
+            preds_str = self.converter.decode(preds_index, length_for_pred)
+        elif self.args.prediction == 'cppd':
+            target_batch = self.converter.encode(labels, batch_max_length=self.args.max_len)
+            preds_train = self.model.forward_train(images)
+            val_loss = self.criterion(preds_train, target_batch)['loss']
+            self.model.eval()
+            preds = self.model(images)
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
