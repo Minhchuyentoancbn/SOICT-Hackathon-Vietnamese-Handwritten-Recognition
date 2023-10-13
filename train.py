@@ -11,7 +11,7 @@ import os
 import math
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
-from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, make_submission, tone_encode
+from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, CPPDConverter, make_submission, tone_encode
 from baseline import Model, LightningModel
 from test import predict
 from models.parseq import PARSeq
@@ -184,6 +184,8 @@ def train(args):
         converter = SRNConverter(args.tone)
     elif args.prediction == 'parseq' or args.prediction == 'abinet':
         converter = ParseqConverter(args.tone)
+    elif args.prediction == 'cppd':
+        converter = CPPDConverter(args.tone)
         
     NUM_CLASSES = converter.num_classes
     
