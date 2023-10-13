@@ -336,10 +336,11 @@ class CPPDConverter(object):
 
         for i, t in enumerate(text):
             txt, txt_node = self.text_encode(t)
-            txt_pos_node = [1] * (len(txt) + 1) + [0] * (self.batch_max_length - len(text))
+            txt_pos_node = [1] * (len(txt) + 1) + [0] * (self.batch_max_length - len(txt))
             txt.append(0)  # eos
             txt = txt + [self.ignore_index] * (self.batch_max_length + 1 - len(txt))
             label_node.append(txt_node + txt_pos_node)
+            # print(len(txt_node + txt_pos_node))
             batch_text[i][:len(txt)] = torch.LongTensor(txt)
         return batch_text.to(device), torch.IntTensor(label_node).to(device), torch.IntTensor(length).to(device)
     
