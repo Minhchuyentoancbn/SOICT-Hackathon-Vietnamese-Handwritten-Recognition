@@ -75,7 +75,7 @@ class Model(nn.Module):
         if stn_on:
             output_size = (img_height, img_width)
             input_size = (img_height, img_width)
-            if feature_extractor == 'svtr':
+            if feature_extractor == 'svtr' and prediction != 'cppd':
                 output_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
                 20, input_size, output_size, img_channel
@@ -90,6 +90,12 @@ class Model(nn.Module):
             return
 
         if feature_extractor == 'svtr':
+            if prediction == 'cppd':
+                last_stage = False
+                prenorm = True
+            else:
+                last_stage = True
+                prenorm = False
             self.feature_extractor = SVTRNet(
                 img_size=(32, 100),
                 in_channels=img_channel,
@@ -98,7 +104,7 @@ class Model(nn.Module):
                 num_heads=[6, 8, 16],
                 out_channels=384,
                 mixer=['Local'] * 10 + ['Global'] * 11,
-                last_stage=True, prenorm=False,
+                last_stage=last_stage, prenorm=prenorm,
             )
         elif feature_extractor == 'resnet':
             self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
