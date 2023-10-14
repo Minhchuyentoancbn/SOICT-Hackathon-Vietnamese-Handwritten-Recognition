@@ -371,8 +371,8 @@ class CPPDLoss(nn.Module):
         n_class = preds.shape[1]
         one_hot = F.one_hot(tgts, preds.shape[1])
         one_hot = one_hot * (1 - eps) + (1 - one_hot) * eps / (n_class - 1)
-        log_prb = F.log_softmax(preds, axis=1)
-        loss = -(one_hot * log_prb).sum(axis=1)
+        log_prb = F.log_softmax(preds, dim=1)
+        loss = -(one_hot * log_prb).sum(dim=1)
         loss = loss.masked_select(non_pad_mask).mean()
         return loss
 
