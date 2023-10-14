@@ -11,11 +11,9 @@ import os
 import math
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
-from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, CPPDConverter, make_submission, tone_encode, build_converter, build_model
-from baseline import Model, LightningModel
+from tools import make_submission, tone_encode, build_converter, build_model
+from baseline import LightningModel
 from test import predict
-from models.parseq import PARSeq
-from models.abinet import ABINet
 
 
 def get_data(
@@ -178,7 +176,7 @@ def train(args):
         
     # Get the model
     model = build_model(args, converter)
-    
+
     pl_model = LightningModel(model, converter, args)
 
     # early_stop_callback = EarlyStopping(
