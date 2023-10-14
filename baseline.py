@@ -17,6 +17,7 @@ from models.vitstr import create_vitstr
 from models.resnet_aster import ResNet_ASTER
 from models.svtr import SVTRNet
 from models.cppd import CPPDHead, CPPDLoss
+from models.parseq import parseq_base_patch16_224, parseq_small_patch16_224
 from timm.optim import create_optimizer_v2
 
 
@@ -122,6 +123,10 @@ class Model(nn.Module):
                 'convnext_large_mlp.clip_laion2b_soup_ft_in12k_in1k_320', 
                 pretrained=True, features_only=True,
             )
+        elif feature_extractor == 'vit-base':
+            self.feature_extractor = parseq_base_patch16_224(pretrained=True)
+        elif feature_extractor == 'vit-small':
+            self.feature_extractor = parseq_small_patch16_224(pretrained=True)
     
         # Output channel of the feature extractor
         if feature_extractor == 'densenet':
@@ -129,6 +134,10 @@ class Model(nn.Module):
         elif feature_extractor == 'convnext':
             output_visual_channel = 768
         elif feature_extractor == 'svtr' and prediction != 'cppd':
+            output_visual_channel = 384
+        elif feature_extractor == 'vit-base':
+            output_visual_channel = 768
+        elif feature_extractor == 'vit-small':
             output_visual_channel = 384
         else:
             output_visual_channel = 512
@@ -138,7 +147,7 @@ class Model(nn.Module):
             self.dropout = nn.Dropout(dropout)
         else:
             self.dropout = nn.Identity()
-        if feature_extractor != 'svtr':
+        if feature_extractor not in ['svtr', 'vit-base', 'vit-small']:
             self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
         else:
             self.adaptive_pool = nn.Identity()
@@ -146,7 +155,7 @@ class Model(nn.Module):
         # Sequence modeling
         if prediction == 'srn':
             self.sequence_modeling = Transforme_Encoder(output_visual_channel, n_position=img_width // 4 + 1)
-        elif feature_extractor == 'svtr':
+        elif feature_extractor in ['svtr', 'vit-base', 'vit-small']:
             self.sequence_modeling = nn.Identity()
         else:
             self.sequence_modeling = nn.Sequential(
@@ -157,7 +166,7 @@ class Model(nn.Module):
         # Output dimension of the sequence modeling
         if prediction == 'srn':
             output_seq_dim = img_width // 4 + 1
-        elif feature_extractor == 'svtr':
+        elif feature_extractor in ['svtr', 'vit-base', 'vit-small']:
             output_seq_dim = output_visual_channel
         else:
             output_seq_dim = 256
@@ -174,6 +183,11 @@ class Model(nn.Module):
                 vis_seq = img_width * img_height // 64
             elif feature_extractor == 'resnet':
                 vis_seq = img_width // 4 + 1
+            elif feature_extractor in ['vit-base', 'vit-small']:
+                vis_seq = 196
+            else:
+                raise NotImplementedError
+
             self.prediction = CPPDHead(output_seq_dim, num_class, max_len=max_len, dim=output_seq_dim, vis_seq=vis_seq)
         else:
             self.prediction = nn.Identity()
@@ -205,11 +219,12 @@ class Model(nn.Module):
         else:
             feature_map = self.feature_extractor(images)
         visual_feature = self.dropout(feature_map)  # Dropout
-        if self.extractor_type != 'svtr':
+        if self.extractor_type not in ['svtr', 'vit-base', 'vit-small']:
             visual_feature = self.adaptive_pool(visual_feature.permute(0, 3, 1, 2)) # (B, C, H, W) -> (B, W, C, H) -> (B, W, C, 1)
             visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
         elif self.predict_method == 'cppd':
-            visual_feature = visual_feature.permute([0, 2, 1])
+            if self.extractor_type == 'svtr':
+                visual_feature = visual_feature.permute([0, 2, 1])
 
         # Sequence modeling
         if self.predict_method == 'srn':
