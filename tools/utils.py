@@ -75,7 +75,7 @@ def parse_arguments(argv):
     parser.add_argument('--abinet_v_backbone', type=str, default='transformer', help='V-backbone for ABINet, default: transformer, options: transformer, resnet')
 
     # Other models
-    parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster, convnext, svtr')
+    parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster, convnext, svtr, vit_base')
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
     parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, abinet, cppd')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
