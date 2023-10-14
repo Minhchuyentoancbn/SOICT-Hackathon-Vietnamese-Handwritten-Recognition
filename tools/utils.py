@@ -314,7 +314,7 @@ def predict_batch(model, converter, images, batch_size, transformer, max_length,
         _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
         preds_str = converter.decode(preds_index, length_for_pred)
     elif prediction == 'cppd':
-        preds = model(images)
+        preds, _ = model(images)
         _, preds_index = preds.max(2)
         preds_str = converter.decode(preds_index, length_for_pred)
 
