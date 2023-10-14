@@ -77,7 +77,7 @@ class Model(nn.Module):
         # Transformation
         if stn_on:
             input_size = (img_height, img_width)
-            if feature_extractor == 'svtr':
+            if feature_extractor == 'svtr' and prediction != 'cppd':
                 output_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
                 20, input_size, output_size, img_channel
