@@ -7,7 +7,7 @@ from models.parseq import PARSeq
 from models.abinet import ABINet
 from torchmetrics.text import CharErrorRate
 from argparse import ArgumentParser
-from .converters import CTCLabelConverter, AttnLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter
+from .converters import CTCLabelConverter, AttnLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, CPPDConverter
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -178,7 +178,55 @@ def load_model(name):
     """
     command = read_scripts(name)
     args = parse_arguments(command.split())
+    device = get_device()
 
+    # Get the converter
+    converter = build_converter(args)
+    model = build_model(args, converter)
+    model.load_state_dict(torch.load(f'saved_models/{name}.pt'))
+    model.eval()
+    model.to(device)
+
+    return model, converter, args
+
+
+def predict_train_valid(model, converter, data_loader, args):
+    
+    cer = CharErrorRate()
+    device = get_device()
+    preds_lst = []
+    reals_lst = []
+    cer_lst = []
+    confidences = []
+    max_length = args.max_len
+    transformer = args.transformer
+    model.eval()
+    with torch.no_grad():
+        for batch in data_loader:
+            # Prepare data
+            images, labels, _, _ = batch
+            images = images.to(device)
+            batch_size = images.size(0)
+
+            # Predict
+            preds, preds_str = predict_batch(model, converter, images, batch_size, transformer, max_length, args.prediction)
+
+            # Compute confidence score
+            preds_prob = F.softmax(preds, dim=2)
+            preds_max_prob, _ = preds_prob.max(dim=2)
+
+            # Compute CER
+            for i, (gt, pred, pred_max_prob) in enumerate(zip(labels, preds_str, preds_max_prob)):
+                pred, confidence_score = postprocess(pred, pred_max_prob, transformer, args.prediction)
+                confidences.append(confidence_score)
+                preds_lst.append(pred)
+                reals_lst.append(gt)
+                cer_lst.append(cer([pred], [gt]).item())
+
+    return preds_lst, reals_lst, cer_lst, confidences
+
+
+def build_converter(args):
     # Get the converter
     if args.transformer:
         converter = TokenLabelConverter(args.max_len, args.tone)
@@ -190,7 +238,13 @@ def load_model(name):
         converter = SRNConverter(args.tone)
     elif args.prediction == 'parseq' or args.prediction == 'abinet':
         converter = ParseqConverter(args.tone)
-        
+    elif args.prediction == 'cppd':
+        converter = CPPDConverter(args.tone)
+
+    return converter
+
+
+def build_model(args, converter):
     NUM_CLASSES = converter.num_classes
 
     if args.grayscale:
@@ -226,86 +280,58 @@ def load_model(name):
             transformer=args.transformer, transformer_model=args.transformer_model,
         )
 
-    model.load_state_dict(torch.load(f'saved_models/{name}.pt'))
-    device = get_device()
-    model.eval()
-    model.to(device)
-
-    return model, converter, args
+    return model
 
 
-def predict_train_valid(model, converter, data_loader, args):
-    
-    cer = CharErrorRate()
-    device = get_device()
-    preds_lst = []
-    reals_lst = []
-    img_lst = []
-    cer_lst = []
-    confidences = []
-    max_length = args.max_len
-    transformer = args.transformer
+def predict_batch(model, converter, images, batch_size, transformer, max_length, prediction):
+    if not transformer:
+        length_for_pred = torch.IntTensor([max_length] * batch_size).to(device)
+        text_for_pred = torch.LongTensor(batch_size, max_length + 1).fill_(0).to(device)
 
-    with torch.no_grad():
-        for batch in data_loader:
-            # Prepare data
-            images, labels, _, _ = batch
-            images = images.to(device)
-            batch_size = images.size(0)
-            if not transformer:
-                length_for_pred = torch.IntTensor([max_length] * batch_size).to(device)
-                text_for_pred = torch.LongTensor(batch_size, max_length + 1).fill_(0).to(device)
+    # Compute loss
+    if transformer:
+        preds = model(images, seqlen=converter.batch_max_length, text=None)
+        _, preds_index = preds.topk(1, dim=-1, largest=True, sorted=True)
+        preds_index = preds_index.view(-1, converter.batch_max_length)
+        length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
+        preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
+    elif prediction == 'ctc':
+        preds, _ = model(images, text_for_pred)
+        preds_size = torch.IntTensor([preds.size(1)] * batch_size)
+        _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+        preds_str = converter.decode(preds_index, preds_size)
+    elif prediction == 'attention':
+        preds, _ = model(images, text_for_pred, is_train=False)
+        _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+        preds_str = converter.decode(preds_index, length_for_pred)
+    elif prediction == 'srn':
+        preds, _ = model(images, None)
+        preds = preds[2]
+        _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+        preds_str = converter.decode(preds_index, length_for_pred)
+    elif prediction == 'parseq' or prediction == 'abinet':
+        preds = model(images)
+        _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
+        preds_str = converter.decode(preds_index, length_for_pred)
+    elif prediction == 'cppd':
+        preds = model(images)
+        _, preds_index = preds.max(2)
+        preds_str = converter.decode(preds_index, length_for_pred)
 
-            # Compute loss
-            model.eval()
-            if args.transformer:
-                preds = model(images, seqlen=converter.batch_max_length, text=None)
-                _, preds_index = preds.topk(1, dim=-1, largest=True, sorted=True)
-                preds_index = preds_index.view(-1, converter.batch_max_length)
-                length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
-                preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
-            elif args.prediction == 'ctc':
-                preds, _ = model(images, text_for_pred)
-                preds_size = torch.IntTensor([preds.size(1)] * batch_size)
-                _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
-                preds_str = converter.decode(preds_index, preds_size)
-            elif args.prediction == 'attention':
-                preds, _ = model(images, text_for_pred, is_train=False)
-                _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
-                preds_str = converter.decode(preds_index, length_for_pred)
-            elif args.prediction == 'srn':
-                preds, _ = model(images, None)
-                preds = preds[2]
-                _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
-                preds_str = converter.decode(preds_index, length_for_pred)
-            elif args.prediction == 'parseq' or args.prediction == 'abinet':
-                preds = model(images)
-                _, preds_index = preds.max(2) # (B, T, C) -> (B, T), greedy decoding
-                preds_str = converter.decode(preds_index, length_for_pred)
+    return preds, preds_str
 
-            # Compute confidence score
-            preds_prob = F.softmax(preds, dim=2)
-            preds_max_prob, _ = preds_prob.max(dim=2)
 
-            # Compute CER
-            for i, (gt, pred, pred_max_prob) in enumerate(zip(labels, preds_str, preds_max_prob)):
-                if args.transformer or args.prediction == 'attention':
-                    pred_EOS = pred.find('[s]')
-                    pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
-                    pred_max_prob = pred_max_prob[:pred_EOS]
-                elif args.prediction == 'srn' or args.prediction == 'parseq' or args.prediction == 'abinet':
-                    pred_EOS = len(pred)
-                    pred_max_prob = pred_max_prob[:pred_EOS]
-                try:
-                    confidence_score = pred_max_prob.cumprod(dim=0)[-1]
-                    confidences.append(confidence_score.item())
-                except:
-                    confidence_score = 0.0  # Case when pred_max_prob is empty
-                    confidences.append(confidence_score)
+def postprocess(pred, pred_max_prob, transformer, prediction):
+    if transformer or prediction == 'attention':
+        pred_EOS = pred.find('[s]')
+        pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
+        pred_max_prob = pred_max_prob[:pred_EOS]
+    elif prediction in ['srn', 'parseq', 'abinet', 'cppd']:
+        pred_EOS = len(pred)
+        pred_max_prob = pred_max_prob[:pred_EOS]
+    try:
+        confidence_score = pred_max_prob.cumprod(dim=0)[-1].item()
+    except:
+        confidence_score = 0.0  # Case when pred_max_prob is empty
 
-                preds_lst.append(pred)
-                reals_lst.append(gt)
-                cer_lst.append(cer([pred], [gt]).item())
-                img_lst.append(images[i].cpu().numpy().transpose(1, 2, 0))
-
-    return preds_lst, reals_lst, cer_lst, confidences, img_lst
+    return pred, confidence_score
