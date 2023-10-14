@@ -186,7 +186,7 @@ class Model(nn.Module):
         initialize_weights(self.prediction)
 
 
-    def forward(self, images, text=None, is_train=True, seqlen=None, tgt_key_padding_mask=None, bos_id=None):
+    def forward(self, images, text=None, is_train=True, seqlen=None):
         # shape of images: (B, C, H, W)
         # Transformation
         if seqlen is None:
