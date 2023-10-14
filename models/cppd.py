@@ -13,6 +13,8 @@ from timm.layers import DropPath
 from collections.abc import Callable
 from .svtr import Mlp
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class Embeddings(nn.Module):
     def __init__(self, d_model, vocab, padding_idx=None, scale_embedding=True):
@@ -58,7 +60,7 @@ class Attention(nn.Module):
             [-1, N, 2, self.num_heads, C // self.num_heads]).permute(
                 (2, 0, 3, 1, 4))
         attn = q.matmul(k.permute((0, 1, 3, 2))) * self.scale
-        attn = F.softmax(attn, axis=-1)
+        attn = F.softmax(attn, dim=-1)
         attn = self.attn_drop(attn)
         x = (attn.matmul(v)).permute((0, 2, 1, 3)).reshape((-1, QN, C))
         x = self.proj(x)
@@ -163,7 +165,7 @@ class DecoderLayer(nn.Module):
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         if isinstance(norm_layer, str):
-            self.norm2 = eval(norm_layer)(dim, epsilon=epsilon)
+            self.norm2 = eval(norm_layer)(dim, eps=epsilon)
         elif isinstance(norm_layer, Callable):
             self.norm2 = norm_layer(dim)
         else:
@@ -205,7 +207,7 @@ class CPPDHead(nn.Module):
             d_model=dim, vocab=self.max_len, scale_embedding=True)
         dpr = np.linspace(0, drop_path_rate, num_layer + 1)
 
-        self.char_node_decoder = nn.LayerList([
+        self.char_node_decoder = nn.ModuleList([
             DecoderLayer(
                 dim=dim,
                 num_heads=dim // 32,
@@ -213,7 +215,7 @@ class CPPDHead(nn.Module):
                 qkv_bias=True,
                 drop_path=dpr[i]) for i in range(num_layer)
         ])
-        self.pos_node_decoder = nn.LayerList([
+        self.pos_node_decoder = nn.ModuleList([
             DecoderLayer(
                 dim=dim,
                 num_heads=dim // 32,
@@ -229,12 +231,14 @@ class CPPDHead(nn.Module):
             qkv_bias=True,
             drop_path=dpr[num_layer:num_layer + 1])
 
-        self.char_pos_embed = self.create_parameter(
-            shape=[1, self.max_len, dim])
+        self.char_pos_embed = nn.Parameter(
+            torch.zeros((1, self.max_len, dim))
+        )
         
         # self.add_parameter("char_pos_embed", self.char_pos_embed)
-        self.vis_pos_embed = self.create_parameter(
-            shape=[1, vis_seq, dim])
+        self.vis_pos_embed = nn.Parameter(
+            torch.zeros((1, vis_seq, dim))
+        )
         # self.add_parameter("vis_pos_embed", self.vis_pos_embed)
 
         self.char_node_fc1 = nn.Linear(dim, max_len)
@@ -264,7 +268,7 @@ class CPPDHead(nn.Module):
         visual_feats = x + self.vis_pos_embed
         bs = visual_feats.shape[0]
         pos_node_embed = self.pos_node_embed(torch.arange(
-            self.max_len)).unsqueeze(0) + self.char_pos_embed
+            self.max_len).to(device)).unsqueeze(0) + self.char_pos_embed
         pos_node_embed = torch.tile(pos_node_embed, [bs, 1, 1])
         char_vis_node_query = visual_feats
         pos_vis_node_query = torch.concat([pos_node_embed, visual_feats], 1)
@@ -293,11 +297,12 @@ class CPPDHead(nn.Module):
             char_node_embed = self.char_node_embed(targets[-2])
         else:
             char_node_embed = self.char_node_embed(
-                torch.arange(self.out_channels)).unsqueeze(0)
+                torch.arange(self.out_channels).to(device)
+            ).unsqueeze(0)
             char_node_embed = torch.tile(char_node_embed, [bs, 1, 1])
         counting_char_num = char_node_embed.shape[1]
         pos_node_embed = self.pos_node_embed(torch.arange(
-            self.max_len)).unsqueeze(0) + self.char_pos_embed
+            self.max_len).to(device)).unsqueeze(0) + self.char_pos_embed
         pos_node_embed = torch.tile(pos_node_embed, [bs, 1, 1])
 
         node_feats = []
@@ -321,7 +326,7 @@ class CPPDHead(nn.Module):
 
         pos_node_feats1 = self.pos_node_fc1(pos_node_query)
         diag_mask = torch.eye(pos_node_feats1.shape[1]).unsqueeze(0).tile(
-            [pos_node_feats1.shape[0], 1, 1])
+            [pos_node_feats1.shape[0], 1, 1]).to(device)
         pos_node_feats1 = (pos_node_feats1 * diag_mask).sum(-1)
 
         node_feats.append(char_node_feats1)
@@ -338,7 +343,7 @@ class CPPDHead(nn.Module):
         return {'char_pos_embed', 'vis_pos_embed', 'char_node_embed', 'pos_node_embed'}
     
 
-class CPPDLoss(nn.Layer):
+class CPPDLoss(nn.Module):
     def __init__(self,
                  smoothing=False,
                  ignore_index=200,
@@ -381,7 +386,7 @@ class CPPDLoss(nn.Layer):
         loss_char_node = self.char_node_ce(node_feats[0].flatten(0, 1),
                                            node_tgt[:, :-26].flatten(0, 1))
         loss_pos_node = self.pos_node_ce(node_feats[1].flatten(
-            0, 1), node_tgt[:, -26:].flatten(0, 1).cast('float32'))
+            0, 1), node_tgt[:, -26:].flatten(0, 1).float())
         loss_node = loss_char_node + loss_pos_node
 
         edge_feats = edge_feats.flatten(0, 1)

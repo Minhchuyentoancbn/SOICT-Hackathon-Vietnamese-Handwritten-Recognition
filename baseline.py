@@ -72,11 +72,12 @@ class Model(nn.Module):
         self.max_len = max_len
         self.extractor_type = feature_extractor
 
+        output_size = (img_height, img_width)
+
         # Transformation
         if stn_on:
-            output_size = (img_height, img_width)
             input_size = (img_height, img_width)
-            if feature_extractor == 'svtr' and prediction != 'cppd':
+            if feature_extractor == 'svtr':
                 output_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
                 20, input_size, output_size, img_channel
@@ -98,7 +99,7 @@ class Model(nn.Module):
                 last_stage = True
                 prenorm = False
             self.feature_extractor = SVTRNet(
-                img_size=(32, 100),
+                img_size=output_size,
                 in_channels=img_channel,
                 embed_dim=[192, 256, 512],
                 depth=[3, 9, 9],
@@ -126,7 +127,10 @@ class Model(nn.Module):
         elif feature_extractor == 'convnext':
             output_channel = 768
         elif feature_extractor == 'svtr':
-            output_channel = 384
+            if prediction == 'cppd':
+                output_channel = 512
+            else:
+                output_channel = 384
         else:
             output_channel = 512
 
@@ -166,7 +170,7 @@ class Model(nn.Module):
         elif prediction == 'srn':
             self.prediction = SRN_Decoder(n_position=img_width // 4 + 1, N_max_character=max_len + 1, n_class=num_class)
         elif prediction == 'cppd':
-            self.prediction = CPPDHead(output_channel, num_class, max_len=max_len)
+            self.prediction = CPPDHead(output_channel, num_class, max_len=max_len, dim=512)
         else:
             self.prediction = nn.Identity()
 
@@ -200,6 +204,8 @@ class Model(nn.Module):
         if self.extractor_type != 'svtr':
             visual_feature = self.adaptive_pool(visual_feature.permute(0, 3, 1, 2)) # (B, C, H, W) -> (B, W, C, H) -> (B, W, C, 1)
             visual_feature = visual_feature.squeeze(3) # (B, W, C, 1) -> (B, W, C)
+        elif self.predict_method == 'cppd':
+            visual_feature = visual_feature.permute([0, 2, 1])
 
         # Sequence modeling
         if self.predict_method == 'srn':
@@ -382,7 +388,7 @@ class LightningModel(pl.LightningModule):
                 loss = self.model.calc_loss(self.criterion, targets, v_res, all_l_res, all_a_res)
         elif self.args.prediction == 'cppd':
             target_batch = self.converter.encode(labels, batch_max_length=self.args.max_len)
-            preds = self.model(images)
+            preds, _ = self.model(images)
             loss = self.criterion(preds, target_batch)['loss']
 
         # Focal loss
@@ -487,11 +493,14 @@ class LightningModel(pl.LightningModule):
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
         elif self.args.prediction == 'cppd':
+            length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
             target_batch = self.converter.encode(labels, batch_max_length=self.args.max_len)
-            preds_train = self.model.forward_train(images)
+            self.model.train()
+            with torch.no_grad():
+                preds_train, _ = self.model(images)
             val_loss = self.criterion(preds_train, target_batch)['loss']
             self.model.eval()
-            preds = self.model(images)
+            preds, _ = self.model(images)
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
