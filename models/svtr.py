@@ -565,6 +565,7 @@ if __name__ == '__main__':
         num_heads=[6, 8, 16],
         out_channels=384,
         mixer=['Local'] * 10 + ['Global'] * 11,
+        last_stage=False, prenorm=True
     )
     x = torch.randn(32, 3, 32, 100)
     y = model(x)
