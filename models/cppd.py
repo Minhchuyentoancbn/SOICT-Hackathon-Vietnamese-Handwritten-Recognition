@@ -366,7 +366,7 @@ class CPPDLoss(nn.Module):
         #     torch.zeros(
         #         targets.shape, dtype=targets.dtype),
         #     targets)
-        tgts = tgts.masked_select(non_pad_mask)
+        tgts = targets.masked_fill(targets == self.ignore_index, 0)
         eps = 0.1
         n_class = preds.shape[1]
         one_hot = F.one_hot(tgts, preds.shape[1])
