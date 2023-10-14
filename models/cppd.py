@@ -359,16 +359,14 @@ class CPPDLoss(nn.Module):
 
     def label_smoothing_ce(self, preds, targets):
 
-        non_pad_mask = torch.not_equal(
-            targets,
-            torch.zeros(
-                targets.shape, dtype=targets.dtype) + self.ignore_index)
-        tgts = torch.where(
-            targets == (torch.zeros(
-                targets.shape, dtype=targets.dtype) + self.ignore_index),
-            torch.zeros(
-                targets.shape, dtype=targets.dtype),
-            targets)
+        non_pad_mask = targets.ne(self.ignore_index)
+        # tgts = torch.where(
+        #     targets == (torch.zeros(
+        #         targets.shape, dtype=targets.dtype) + self.ignore_index),
+        #     torch.zeros(
+        #         targets.shape, dtype=targets.dtype),
+        #     targets)
+        tgts = tgts.masked_select(non_pad_mask)
         eps = 0.1
         n_class = preds.shape[1]
         one_hot = F.one_hot(tgts, preds.shape[1])
