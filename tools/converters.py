@@ -342,7 +342,7 @@ class CPPDConverter(object):
             label_node.append(txt_node + txt_pos_node)
             # print(len(txt_node + txt_pos_node))
             batch_text[i][:len(txt)] = torch.LongTensor(txt)
-        return batch_text.to(device), torch.IntTensor(label_node).to(device), torch.IntTensor(length).to(device)
+        return batch_text.to(device), torch.LongTensor(label_node).to(device), torch.LongTensor(length).to(device)
     
 
     def text_encode(self, text):
