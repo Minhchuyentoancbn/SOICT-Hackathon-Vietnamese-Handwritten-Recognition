@@ -170,7 +170,12 @@ class Model(nn.Module):
         elif prediction == 'srn':
             self.prediction = SRN_Decoder(n_position=img_width // 4 + 1, N_max_character=max_len + 1, n_class=num_class)
         elif prediction == 'cppd':
-            self.prediction = CPPDHead(output_channel, num_class, max_len=max_len, dim=512, vis_seq=img_width * img_height // 64)
+            if feature_extractor == 'svtr':
+                vis_seq = img_width * img_height // 64
+            else:
+                output_channel = 256
+                vis_seq = img_width // 4 + 1
+            self.prediction = CPPDHead(output_channel, num_class, max_len=max_len, dim=output_channel, vis_seq=vis_seq)
         else:
             self.prediction = nn.Identity()
 
