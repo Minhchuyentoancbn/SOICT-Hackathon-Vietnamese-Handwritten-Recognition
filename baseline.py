@@ -72,15 +72,15 @@ class Model(nn.Module):
         self.max_len = max_len
         self.extractor_type = feature_extractor
 
-        output_size = (img_height, img_width)
+        output_stn_size = (img_height, img_width)
 
         # Transformation
         if stn_on:
             input_size = (img_height, img_width)
             if feature_extractor == 'svtr' and prediction != 'cppd':
-                output_size = (32, 100)
+                output_stn_size = (32, 100)
             self.tps = TPS_SpatialTransformerNetwork(
-                20, input_size, output_size, img_channel
+                20, input_size, output_stn_size, img_channel
             )
         else:
             self.tps = nn.Identity()
@@ -91,6 +91,7 @@ class Model(nn.Module):
             self.vitstr = create_vitstr(num_class, model=transformer_model)
             return
 
+        # Feature extraction
         if feature_extractor == 'svtr':
             if prediction == 'cppd':
                 last_stage = False
@@ -99,7 +100,7 @@ class Model(nn.Module):
                 last_stage = True
                 prenorm = False
             self.feature_extractor = SVTRNet(
-                img_size=output_size,
+                img_size=output_stn_size,
                 in_channels=img_channel,
                 embed_dim=[192, 256, 512],
                 depth=[3, 9, 9],
@@ -122,24 +123,21 @@ class Model(nn.Module):
                 pretrained=True, features_only=True,
             )
     
+        # Output channel of the feature extractor
         if feature_extractor == 'densenet':
-            output_channel = 2208
+            output_visual_channel = 2208
         elif feature_extractor == 'convnext':
-            output_channel = 768
-        elif feature_extractor == 'svtr':
-            if prediction == 'cppd':
-                output_channel = 512
-            else:
-                output_channel = 384
+            output_visual_channel = 768
+        elif feature_extractor == 'svtr' and prediction != 'cppd':
+            output_visual_channel = 384
         else:
-            output_channel = 512
+            output_visual_channel = 512
 
         # Dropout and adaptive pooling after feature extraction
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
         else:
             self.dropout = nn.Identity()
-
         if feature_extractor != 'svtr':
             self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
         else:
@@ -147,35 +145,36 @@ class Model(nn.Module):
 
         # Sequence modeling
         if prediction == 'srn':
-            self.sequence_modeling = Transforme_Encoder(output_channel, n_position=img_width // 4 + 1)
+            self.sequence_modeling = Transforme_Encoder(output_visual_channel, n_position=img_width // 4 + 1)
         elif feature_extractor == 'svtr':
             self.sequence_modeling = nn.Identity()
         else:
             self.sequence_modeling = nn.Sequential(
-                BidirectionalLSTM(output_channel, 256, 256),
+                BidirectionalLSTM(output_visual_channel, 256, 256),
                 BidirectionalLSTM(256, 256, 256)
             )
 
+        # Output dimension of the sequence modeling
+        if prediction == 'srn':
+            output_seq_dim = img_width // 4 + 1
+        elif feature_extractor == 'svtr':
+            output_seq_dim = output_visual_channel
+        else:
+            output_seq_dim = 256
+
         # Prediction
         if prediction == 'ctc':
-            if feature_extractor == 'svtr':
-                self.prediction = nn.Linear(output_channel, num_class)
-            else:
-                self.prediction = nn.Linear(256, num_class)
+            self.prediction = nn.Linear(output_seq_dim, num_class)
         elif prediction == 'attention':
-            if feature_extractor == 'svtr':
-                self.prediction = Attention(output_channel, output_channel, num_class)
-            else:
-                self.prediction = Attention(256, 256, num_class)
+            self.prediction = Attention(output_seq_dim, output_seq_dim, num_class)
         elif prediction == 'srn':
             self.prediction = SRN_Decoder(n_position=img_width // 4 + 1, N_max_character=max_len + 1, n_class=num_class)
         elif prediction == 'cppd':
             if feature_extractor == 'svtr':
                 vis_seq = img_width * img_height // 64
-            else:
-                output_channel = 256
+            elif feature_extractor == 'resnet':
                 vis_seq = img_width // 4 + 1
-            self.prediction = CPPDHead(output_channel, num_class, max_len=max_len, dim=output_channel, vis_seq=vis_seq)
+            self.prediction = CPPDHead(output_seq_dim, num_class, max_len=max_len, dim=output_seq_dim, vis_seq=vis_seq)
         else:
             self.prediction = nn.Identity()
 
