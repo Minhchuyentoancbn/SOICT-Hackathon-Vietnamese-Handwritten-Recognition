@@ -11,7 +11,7 @@ import os
 import math
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
 from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
-from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, CPPDConverter, make_submission, tone_encode
+from tools import AttnLabelConverter, CTCLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, CPPDConverter, make_submission, tone_encode, build_converter, build_model
 from baseline import Model, LightningModel
 from test import predict
 from models.parseq import PARSeq
@@ -174,53 +174,11 @@ def train(args):
     train_loader, val_loader, test_loader, train_set, val_set, test_set = get_data(args.batch_size, args.seed, args)
 
     # Get the converter
-    if args.transformer:
-        converter = TokenLabelConverter(args.max_len, args.tone)
-    elif args.prediction == 'ctc':
-        converter = CTCLabelConverter(args.tone)
-    elif args.prediction == 'attention':
-        converter = AttnLabelConverter(args.tone)
-    elif args.prediction == 'srn':
-        converter = SRNConverter(args.tone)
-    elif args.prediction == 'parseq' or args.prediction == 'abinet':
-        converter = ParseqConverter(args.tone)
-    elif args.prediction == 'cppd':
-        converter = CPPDConverter(args.tone)
+    converter = build_converter(args)
         
-    NUM_CLASSES = converter.num_classes
-    
-    if args.grayscale:
-        input_channel = 1
-    else:
-        input_channel = 3
-
     # Get the model
-    if args.prediction == 'parseq': # Use PARSeq
-        if args.parseq_model == 'small' or args.parseq_model == 'small_pretrained':
-            embed_dim = 384
-            num_heads = 6
-        elif args.parseq_model == 'base' or args.parseq_model == 'base_pretrained':
-            embed_dim = 768
-            num_heads = 12
-
-        model = PARSeq(
-            args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
-            (args.height, args.width), stn_on=args.stn_on, seed=args.seed, img_channel=input_channel,
-            embed_dim=embed_dim, enc_num_heads=num_heads, patch_size=args.patch_size, refine_iters=args.refine_iters,
-            pretrained=args.parseq_pretrained, transformer=args.parseq_use_transformer, model_name=args.parseq_model
-        )
-    elif args.prediction == 'abinet': # Use ABINet
-        model = ABINet(
-            args.max_len, NUM_CLASSES, converter.pad_id, converter.bos_id, converter.eos_id, 
-            args.weight_decay, v_backbone=args.abinet_v_backbone,
-        )
-    else:  
-        model = Model(
-            input_channel, args.height, args.width, NUM_CLASSES,
-            args.stn_on, args.feature_extractor, args.prediction,
-            dropout=args.dropout, max_len=args.max_len, 
-            transformer=args.transformer, transformer_model=args.transformer_model,
-        )
+    model = build_model(args, converter)
+    
     pl_model = LightningModel(model, converter, args)
 
     # early_stop_callback = EarlyStopping(
