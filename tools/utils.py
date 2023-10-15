@@ -82,6 +82,7 @@ def parse_arguments(argv):
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
     parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, abinet, cppd')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
+    parser.add_argument('--seq_dim', type=int, default=256, help='Dimension of the sequence encoder, default: 256')
 
     # Auxiliary loss
     parser.add_argument('--count_mark', type=int, default=0, help='Whether to count mark or not, default: 0 (not count mark)')
@@ -281,7 +282,7 @@ def build_model(args, converter):
             args.stn_on, args.feature_extractor, args.prediction,
             dropout=args.dropout, max_len=args.max_len, 
             transformer=args.transformer, transformer_model=args.transformer_model,
-            svtr_backbone=args.svtr_backbone,
+            svtr_backbone=args.svtr_backbone, seq_dim=args.seq_dim,
         )
 
     return model

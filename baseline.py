@@ -31,7 +31,7 @@ class Model(nn.Module):
                  stn_on=False, feature_extractor='resnet', 
                  prediction='ctc', max_len=25, dropout=0.0,
                  transformer=0, transformer_model='vitstr_tiny_patch16_224',
-                 svtr_backbone='large'
+                 svtr_backbone='large', seq_dim=256
                  ):
         """
         Arguments:
@@ -183,8 +183,8 @@ class Model(nn.Module):
             self.sequence_modeling = nn.Identity()
         else:
             self.sequence_modeling = nn.Sequential(
-                BidirectionalLSTM(output_visual_channel, 256, 256),
-                BidirectionalLSTM(256, 256, 256)
+                BidirectionalLSTM(output_visual_channel, seq_dim, seq_dim),
+                BidirectionalLSTM(seq_dim, seq_dim, seq_dim)
             )
 
         # Output dimension of the sequence modeling
@@ -193,7 +193,7 @@ class Model(nn.Module):
         elif feature_extractor in ['svtr', 'vit-base', 'vit-small']:
             output_seq_dim = output_visual_channel
         else:
-            output_seq_dim = 256
+            output_seq_dim = seq_dim
 
         # Prediction
         if prediction == 'ctc':
