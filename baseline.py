@@ -407,7 +407,7 @@ class LightningModel(pl.LightningModule):
                 loss = self.model.calc_loss(self.criterion, targets, v_res, all_l_res, all_a_res)
         elif self.args.prediction == 'cppd':
             target_batch = self.converter.encode(labels, batch_max_length=self.args.max_len)
-            preds, _ = self.model(images)
+            preds, visual_feature = self.model(images)
             loss = self.criterion(preds, target_batch)['loss']
 
         # Focal loss
@@ -516,7 +516,7 @@ class LightningModel(pl.LightningModule):
             target_batch = self.converter.encode(labels, batch_max_length=self.args.max_len)
             self.model.train()
             with torch.no_grad():
-                preds_train, _ = self.model(images)
+                preds_train, visual_feature = self.model(images)
             val_loss = self.criterion(preds_train, target_batch)['loss']
             self.model.eval()
             preds, _ = self.model(images)
