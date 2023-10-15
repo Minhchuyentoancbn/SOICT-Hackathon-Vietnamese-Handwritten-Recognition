@@ -74,6 +74,9 @@ def parse_arguments(argv):
     # ABINet
     parser.add_argument('--abinet_v_backbone', type=str, default='transformer', help='V-backbone for ABINet, default: transformer, options: transformer, resnet')
 
+    # SVTR
+    parser.add_argument('--svtr_backbone', type=str, default='large', help='Backbone for SVTR, default: large, options: large, base')
+
     # Other models
     parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster, convnext, svtr, vit-base, vit-small')
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
@@ -278,6 +281,7 @@ def build_model(args, converter):
             args.stn_on, args.feature_extractor, args.prediction,
             dropout=args.dropout, max_len=args.max_len, 
             transformer=args.transformer, transformer_model=args.transformer_model,
+            svtr_backbone=args.svtr_backbone,
         )
 
     return model

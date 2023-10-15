@@ -30,7 +30,8 @@ class Model(nn.Module):
     def __init__(self, img_channel, img_height, img_width, num_class,
                  stn_on=False, feature_extractor='resnet', 
                  prediction='ctc', max_len=25, dropout=0.0,
-                 transformer=0, transformer_model='vitstr_tiny_patch16_224'
+                 transformer=0, transformer_model='vitstr_tiny_patch16_224',
+                 svtr_backbone='large'
                  ):
         """
         Arguments:
@@ -100,15 +101,31 @@ class Model(nn.Module):
             else:
                 last_stage = True
                 prenorm = False
+
+            if svtr_backbone == 'large':
+                svtr_config = {
+                    'embed_dim': [192, 256, 512],
+                    'depth': [3, 9, 9],
+                    'num_heads': [6, 8, 16],
+                    'out_channels': 384,
+                    'mixer': ['Local'] * 10 + ['Global'] * 11,
+                }
+            elif svtr_backbone == 'base':
+                svtr_config = {
+                    'embed_dim': [128, 256, 384],
+                    'depth': [6, 6, 4],
+                    'num_heads': [4, 8, 12],
+                    'mixer': ['Conv','Conv','Conv','Conv','Conv','Conv', 'Conv','Conv', 'Global','Global','Global','Global','Global','Global','Global','Global','Global','Global'],
+                    'local_mixer': [[5, 5], [5, 5], [5, 5]]
+                }
+            else:
+                raise NotImplementedError
+            
             self.feature_extractor = SVTRNet(
                 img_size=output_stn_size,
                 in_channels=img_channel,
-                embed_dim=[192, 256, 512],
-                depth=[3, 9, 9],
-                num_heads=[6, 8, 16],
-                out_channels=384,
-                mixer=['Local'] * 10 + ['Global'] * 11,
                 last_stage=last_stage, prenorm=prenorm,
+                **svtr_config
             )
         elif feature_extractor == 'resnet':
             self.feature_extractor = ResNet_FeatureExtractor(img_channel, 512)
@@ -139,6 +156,13 @@ class Model(nn.Module):
             output_visual_channel = 768
         elif feature_extractor == 'vit-small':
             output_visual_channel = 384
+        elif feature_extractor == 'svtr':
+            if svtr_backbone == 'large':
+                output_visual_channel = 512
+            elif svtr_backbone == 'base':
+                output_visual_channel = 384
+            else:
+                raise NotImplementedError
         else:
             output_visual_channel = 512
 
