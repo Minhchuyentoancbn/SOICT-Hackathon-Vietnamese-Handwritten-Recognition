@@ -285,7 +285,8 @@ class CPPDHead(nn.Module):
         pos_node_feats = self.edge_decoder(pos_node_query, char_vis_feats,
                                            char_vis_feats)  # B, 26, dim
         edge_feats = self.edge_fc(pos_node_feats)  # B, 26, 37
-        edge_logits = F.softmax(edge_feats, -1)
+        # edge_logits = F.softmax(edge_feats, -1)
+        edge_logits = edge_feats
 
         return edge_logits
 
