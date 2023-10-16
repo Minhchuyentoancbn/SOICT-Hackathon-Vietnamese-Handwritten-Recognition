@@ -702,7 +702,7 @@ class CELoss(nn.Module):
 
     def __init__(self,
                  ignore_index=-1,
-                 reduction='none',
+                 reduction='mean',
                  ignore_first_char=False,
                  smoothing=0
                  ):
@@ -739,9 +739,8 @@ class CELoss(nn.Module):
         outputs, targets = self.format(outputs, targets)
 
         loss_ce = self.loss_ce(outputs, targets.to(outputs.device))
-        losses = dict(loss_ce=loss_ce)
 
-        return losses
+        return loss_ce
 
 
 class TFLoss(CELoss):
@@ -760,7 +759,7 @@ class TFLoss(CELoss):
 
     def __init__(self,
                  ignore_index=-1,
-                 reduction='none',
+                 reduction='mean',
                  smoothing=0,
                  flatten=True,
                  **kwargs):
