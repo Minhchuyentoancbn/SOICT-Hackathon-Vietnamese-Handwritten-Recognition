@@ -71,7 +71,7 @@ class ConvModule(nn.Module):
                  conv_cfg: Optional[Dict] = None,
                  norm_cfg: Optional[Dict] = None,
                  act_cfg: Optional[Dict] = dict(type='ReLU'),
-                 inplace: bool = True,
+                 inplace: bool = False,
                  with_spectral_norm: bool = False,
                  padding_mode: str = 'zeros',
                  order: tuple = ('conv', 'norm', 'act')):

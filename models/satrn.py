@@ -152,7 +152,7 @@ class Adaptive2DPositionalEncoding(nn.Module):
 
     def scale_factor_generate(self, d_hid):
         scale_factor = nn.Sequential(
-            nn.Conv2d(d_hid, d_hid, kernel_size=1), nn.ReLU(inplace=True),
+            nn.Conv2d(d_hid, d_hid, kernel_size=1), nn.ReLU(),
             nn.Conv2d(d_hid, d_hid, kernel_size=1), nn.Sigmoid())
         nn.init.xavier_normal_(scale_factor[0].weight)
         nn.init.constant_(scale_factor[0].bias, 0)
@@ -350,31 +350,31 @@ class TFDecoderLayer(nn.Module):
                                     'norm', 'ffn', 'norm'):
             dec_attn_out = self.self_attn(dec_input, dec_input, dec_input,
                                           self_attn_mask)
-            dec_attn_out += dec_input
+            dec_attn_out = dec_input + dec_attn_out
             dec_attn_out = self.norm1(dec_attn_out)
 
             enc_dec_attn_out = self.enc_attn(dec_attn_out, enc_output,
                                              enc_output, dec_enc_attn_mask)
-            enc_dec_attn_out += dec_attn_out
+            enc_dec_attn_out = dec_attn_out + enc_dec_attn_out
             enc_dec_attn_out = self.norm2(enc_dec_attn_out)
 
             mlp_out = self.mlp(enc_dec_attn_out)
-            mlp_out += enc_dec_attn_out
+            mlp_out = enc_dec_attn_out + mlp_out
             mlp_out = self.norm3(mlp_out)
         elif self.operation_order == ('norm', 'self_attn', 'norm',
                                       'enc_dec_attn', 'norm', 'ffn'):
             dec_input_norm = self.norm1(dec_input)
             dec_attn_out = self.self_attn(dec_input_norm, dec_input_norm,
                                           dec_input_norm, self_attn_mask)
-            dec_attn_out += dec_input
+            dec_attn_out = dec_input + dec_attn_out
 
             enc_dec_attn_in = self.norm2(dec_attn_out)
             enc_dec_attn_out = self.enc_attn(enc_dec_attn_in, enc_output,
                                              enc_output, dec_enc_attn_mask)
-            enc_dec_attn_out += dec_attn_out
+            enc_dec_attn_out = dec_attn_out + enc_dec_attn_out
 
             mlp_out = self.mlp(self.norm3(enc_dec_attn_out))
-            mlp_out += enc_dec_attn_out
+            mlp_out = enc_dec_attn_out + mlp_out
 
         return mlp_out
 
@@ -464,7 +464,7 @@ class SATRNEncoder(nn.Module):
             Tensor: A tensor of shape :math:`(N, T, D_m)`.
         """
         valid_ratios = [1.0 for _ in range(feat.size(0))]
-        feat += self.position_enc(feat)
+        feat = self.position_enc(feat) + feat
         n, c, h, w = feat.size()
         mask = feat.new_zeros((n, h, w))
         for i, valid_ratio in enumerate(valid_ratios):
@@ -675,11 +675,7 @@ class SATRN(nn.Module):
         """
 
         feat = self.extract_feat(img)
-
-        out_enc = None
-        if self.encoder is not None:
-            out_enc = self.encoder(feat)
-
+        out_enc = self.encoder(feat)
         out_dec = self.decoder(
             feat, out_enc, targets, train_mode=train_mode)
 
