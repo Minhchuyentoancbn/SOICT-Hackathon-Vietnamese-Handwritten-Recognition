@@ -17,6 +17,7 @@ from models.vitstr import create_vitstr
 from models.resnet_aster import ResNet_ASTER
 from models.svtr import SVTRNet
 from models.cppd import CPPDHead, CPPDLoss
+from models.satrn import TFLoss
 from models.parseq import parseq_base_patch16_224, parseq_small_patch16_224
 from timm.optim import create_optimizer_v2
 
@@ -332,6 +333,8 @@ class LightningModel(pl.LightningModule):
             self.criterion = nn.CrossEntropyLoss(ignore_index=converter.pad_id, reduction=reduction, label_smoothing=args.label_smoothing)
         elif args.prediction == 'cppd':
             self.criterion = CPPDLoss(args.label_smoothing > 0, converter.ignore_index)
+        elif args.prediction == 'satrn':
+            self.criterion = TFLoss(converter.pad_id, smoothing=args.label_smoothing)
 
         # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
@@ -370,7 +373,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if not (self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'cppd']):
+        if not (self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'cppd', 'satrn']):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
@@ -435,6 +438,10 @@ class LightningModel(pl.LightningModule):
             target_batch = self.converter.encode(labels, batch_max_length=self.args.max_len)
             preds, visual_feature = self.model(images)
             loss = self.criterion(preds, target_batch)['loss']
+        elif self.args.prediction == 'satrn':
+            target = self.converter.encode(labels, batch_max_length=self.args.max_len)
+            preds, visual_feature = self.model(images, targets=target, train_mode=True)
+            loss = self.criterion(preds, target)
 
         # Focal loss
         if self.args.focal_loss:
@@ -482,9 +489,9 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if self.args.transformer or self.args.prediction in ['parseq', 'abinet']:
+        if self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'satrn']:
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
-        elif self.args.prediction != 'cppd':
+        elif self.args.prediction not in ['cppd',]:
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
             text_for_pred = torch.LongTensor(batch_size, self.args.max_len + 1).fill_(0)
             text_for_loss, length_for_loss = self.converter.encode(labels, batch_max_length=self.args.max_len)
@@ -546,6 +553,12 @@ class LightningModel(pl.LightningModule):
             val_loss = self.criterion(preds_train, target_batch)['loss']
             self.model.eval()
             preds, _ = self.model(images)
+            _, preds_index = preds.max(2)
+            preds_str = self.converter.decode(preds_index, length_for_pred)
+        elif self.args.prediction == 'satrn':
+            length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
+            preds, visual_feature = self.model(images, train_mode=False)
+            val_loss = self.criterion(preds, target)
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
