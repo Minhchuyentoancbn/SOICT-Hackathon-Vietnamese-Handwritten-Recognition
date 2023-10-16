@@ -6,6 +6,7 @@ from baseline import Model
 from models.parseq import PARSeq
 from models.abinet import ABINet
 from models.satrn import SATRN
+from models.corner import CornerTransformer
 from torchmetrics.text import CharErrorRate
 from argparse import ArgumentParser
 from .converters import CTCLabelConverter, AttnLabelConverter, TokenLabelConverter, SRNConverter, ParseqConverter, CPPDConverter, WordArtConverter
@@ -81,7 +82,7 @@ def parse_arguments(argv):
     # Other models
     parser.add_argument('--feature_extractor', type=str, default='resnet', help='Feature extractor, default: resnet, options: resnet, vgg, densenet, aster, convnext, svtr, vit-base, vit-small')
     parser.add_argument('--stn_on', type=int, default=0, help='Whether to use STN or not, default: 0 (not use STN)')
-    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, abinet, cppd, satrn')
+    parser.add_argument('--prediction', type=str, default='ctc', help='Prediction method, default: ctc, options: ctc, attention, srn, parseq, abinet, cppd, satrn, corner')
     parser.add_argument('--max_len', type=int, default=25, help='Max length of the predicted text, default: 25')
     parser.add_argument('--seq_dim', type=int, default=256, help='Dimension of the sequence encoder, default: 256')
 
@@ -245,7 +246,7 @@ def build_converter(args):
         converter = ParseqConverter(args.tone)
     elif args.prediction == 'cppd':
         converter = CPPDConverter(args.tone)
-    elif args.prediction == 'satrn':
+    elif args.prediction in ['satrn', 'corner']:
         converter = WordArtConverter(args.tone)
 
     return converter
@@ -281,6 +282,10 @@ def build_model(args, converter):
         )
     elif args.prediction == 'satrn':
         model = SATRN(
+            input_channel, converter, NUM_CLASSES, args.max_len + 2
+        )
+    elif args.prediction == 'corner':
+        model = CornerTransformer(
             input_channel, converter, NUM_CLASSES, args.max_len + 2
         )
     else:
@@ -333,6 +338,10 @@ def predict_batch(model, converter, images, batch_size, transformer, max_length,
         preds, _ = model(images, train_mode=False)
         _, preds_index = preds.max(2)
         preds_str = converter.decode(preds_index, length_for_pred)
+    elif prediction == 'corner':
+        preds, _ = model(images, train_mode=False)
+        _, preds_index = preds.max(2)
+        preds_str = converter.decode(preds_index, length_for_pred)
 
     return preds, preds_str
 
@@ -342,7 +351,7 @@ def postprocess(pred, pred_max_prob, transformer, prediction):
         pred_EOS = pred.find('[s]')
         pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
         pred_max_prob = pred_max_prob[:pred_EOS]
-    elif prediction in ['srn', 'parseq', 'abinet', 'cppd', 'satrn']:
+    elif prediction in ['srn', 'parseq', 'abinet', 'cppd', 'satrn', 'corner']:
         pred_EOS = len(pred)
         pred_max_prob = pred_max_prob[:pred_EOS]
     try:
