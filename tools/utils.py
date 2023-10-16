@@ -281,7 +281,7 @@ def build_model(args, converter):
         )
     elif args.prediction == 'satrn':
         model = SATRN(
-            input_channel, converter, NUM_CLASSES, args.max_len
+            input_channel, converter, NUM_CLASSES, args.max_len + 2
         )
     else:
         model = Model(
