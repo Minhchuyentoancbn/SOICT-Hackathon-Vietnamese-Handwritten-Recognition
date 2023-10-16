@@ -369,3 +369,51 @@ class CPPDConverter(object):
                 text = tone_decode(text)
             texts.append(text)
         return texts
+
+
+class WordArtConverter(object):
+    """ Convert between text-label and text-index """
+
+    def __init__(self, tone=False):
+        self.to_tone = tone
+        # character (str): set of the possible characters.
+        character = '-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặẸẹẺẻẼẽẾếỀềỂểỄễỆệỈỉỊịỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợỤụỦủỨứỪừỬửỮữỰựỲỳỴỵỶỷỸỹ'
+        if tone:
+            character = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        self.start_end_token = '<BOS/EOS>'
+        self.pad_token = '<PAD>'
+
+        self.character = list(character) + [self.start_end_token] + [self.pad_token]
+        self.num_classes = len(self.character)
+
+        self.dict = {word: i for i, word in enumerate(self.character)}
+        self.eos_id = self.dict[self.start_end_token]
+        self.bos_id = self.dict[self.start_end_token]
+        self.pad_id = self.dict[self.pad_token]
+
+
+    def encode(self, text, batch_max_length=25):
+        """ 
+        Convert text-label into text-index.
+        """
+        if self.to_tone:
+            text = [tone_encode(t) for t in text]
+        batch_text = torch.LongTensor(len(text), batch_max_length + 2).fill_(self.pad_id)
+        for i, t in enumerate(text):
+            txt = [self.start_end_token] + list(t) + [self.start_end_token]
+            txt = [self.dict[char] for char in txt]
+            batch_text[i][:len(txt)] = torch.LongTensor(txt)  # batch_text[:, 0] = [GO] token
+        return batch_text.to(device)
+    
+    def decode(self, text_index, length):
+        """ convert text-index into text-label. """
+        texts = []
+        for index, l in enumerate(length):
+            text = ''.join([self.character[i] for i in text_index[index, :]])
+            idx = text.find(self.start_end_token)
+            text = text[:idx]
+            if self.to_tone:
+                text = tone_decode(text)
+            texts.append(text)
+        return texts
+        
