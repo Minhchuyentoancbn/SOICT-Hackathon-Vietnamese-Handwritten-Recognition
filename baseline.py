@@ -103,6 +103,7 @@ class Model(nn.Module):
                 prenorm = False
 
             if svtr_backbone == 'large':
+                print('Using SVTR large')
                 svtr_config = {
                     'embed_dim': [192, 256, 512],
                     'depth': [3, 9, 9],
@@ -111,6 +112,7 @@ class Model(nn.Module):
                     'mixer': ['Local'] * 10 + ['Global'] * 11,
                 }
             elif svtr_backbone == 'base':
+                print('Using SVTR base')
                 svtr_config = {
                     'embed_dim': [128, 256, 384],
                     'depth': [6, 6, 4],
