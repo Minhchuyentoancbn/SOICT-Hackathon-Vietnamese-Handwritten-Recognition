@@ -18,6 +18,7 @@ from models.resnet_aster import ResNet_ASTER
 from models.svtr import SVTRNet
 from models.cppd import CPPDHead, CPPDLoss
 from models.satrn import TFLoss
+from models.corner import CornerLoss
 from models.parseq import parseq_base_patch16_224, parseq_small_patch16_224
 from timm.optim import create_optimizer_v2
 
@@ -335,6 +336,8 @@ class LightningModel(pl.LightningModule):
             self.criterion = CPPDLoss(args.label_smoothing > 0, converter.ignore_index)
         elif args.prediction == 'satrn':
             self.criterion = TFLoss(converter.pad_id, smoothing=args.label_smoothing)
+        elif args.prediction == 'corner':
+            self.criterion = CornerLoss(converter.pad_id, smoothing=args.label_smoothing)
 
         # self.loss_train_avg = Averager()
         self.loss_val_avg = Averager()
@@ -373,7 +376,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if not (self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'cppd', 'satrn']):
+        if not (self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'cppd', 'satrn', 'corner']):
             text, length = self.converter.encode(labels, batch_max_length=self.args.max_len)
 
         # Compute loss
@@ -442,6 +445,10 @@ class LightningModel(pl.LightningModule):
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
             preds, visual_feature = self.model(images, targets=target, train_mode=True)
             loss = self.criterion(preds, target)
+        elif self.args.prediction == 'corner':
+            target = self.converter.encode(labels, batch_max_length=self.args.max_len)
+            preds, char_out_dec = self.model(images, targets=target, train_mode=True)
+            loss = self.criterion(preds, char_out_dec, target)
 
         # Focal loss
         if self.args.focal_loss:
@@ -489,7 +496,7 @@ class LightningModel(pl.LightningModule):
         # Prepare the data
         images, labels, num_marks, num_uppercase = batch
         batch_size = images.size(0)
-        if self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'satrn']:
+        if self.args.transformer or self.args.prediction in ['parseq', 'abinet', 'satrn', 'corner']:
             target = self.converter.encode(labels, batch_max_length=self.args.max_len)
         elif self.args.prediction not in ['cppd',]:
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
@@ -559,6 +566,12 @@ class LightningModel(pl.LightningModule):
             length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
             preds, visual_feature = self.model(images, train_mode=False)
             val_loss = self.criterion(preds, target)
+            _, preds_index = preds.max(2)
+            preds_str = self.converter.decode(preds_index, length_for_pred)
+        elif self.args.prediction == 'corner':
+            length_for_pred = torch.IntTensor([self.args.max_len] * batch_size)
+            preds, char_out_dec = self.model(images, train_mode=False)
+            val_loss = self.criterion(preds, char_out_dec, target)
             _, preds_index = preds.max(2)
             preds_str = self.converter.decode(preds_index, length_for_pred)
 
