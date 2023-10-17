@@ -199,7 +199,7 @@ def train(args):
 
     # Save the confidence for later ensemble
     df = pd.DataFrame({'img_name': img_names, 'confidence': confidences, 'pred': preds})
-    df.to_csv(f'predictions/{args.model_name}.csv', index=False)
+    df.to_csv(f'ensemble/test/{args.model_name}.csv', index=False)
 
 
 def train_model(pl_model, train_loader, val_loader, args):
