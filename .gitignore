@@ -13,7 +13,8 @@ data/val_set/
 data/synthesis/
 data/images/
 saved_models/*.pt
-ensemble/
+ensemble/val/*.csv
+ensemble/test/*.csv
 checkpoints/*/
 augmentation/frost/
 augmentation/images/
