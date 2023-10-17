@@ -151,11 +151,11 @@ def vietnamese_case_insensitive_sort_key(word):
     word = unicodedata.normalize('NFC', word)
     return [vietnamese_order_dict[c] for c in word.lower()]
 
-pattern = "áàảãạắằẳẵặấầẩẫậèéẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ"
-replacement = "a"*5 + "ă"*5 + "â"*5 + "e"*5 + "ê"*5 + "i"*5 + "o"*5 + "ô"*5 + "ơ"*5 + "u"*5 + "ư"*5 + "y"*5
+# pattern = "áàảãạắằẳẵặấầẩẫậèéẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ"
+# replacement = "a"*5 + "ă"*5 + "â"*5 + "e"*5 + "ê"*5 + "i"*5 + "o"*5 + "ô"*5 + "ơ"*5 + "u"*5 + "ư"*5 + "y"*5
 
-# pattern = "ạặậ" + "ẹệ" + "ị" + "ọộợ" + "ụự" + "ỵ"
-# replacement = "aăâ" + "eê" + "i" + "oôơ" + "uư" + "y"
+pattern = "ạặậ" + "ẹệ" + "ị" + "ọộợ" + "ụự" + "ỵ"
+replacement = "aăâ" + "eê" + "i" + "oôơ" + "uư" + "y"
 
 BANG_XOA_DAU = str.maketrans(
     pattern,
