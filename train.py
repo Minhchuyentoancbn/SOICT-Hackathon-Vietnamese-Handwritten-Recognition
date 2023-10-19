@@ -129,7 +129,7 @@ def get_data(
 
     # Add SynthText data
     if args.synth:
-        if args.synth == 1:
+        if args.synth == 1 or args.num_synth > 40000:
             synth_data_path = SYNTH_TRAIN_DIR
             synth_label_path = SYNTH_LABEL_FILE
         elif args.synth == 2:
