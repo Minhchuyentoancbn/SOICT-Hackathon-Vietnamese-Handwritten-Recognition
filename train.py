@@ -10,7 +10,7 @@ import pickle
 import os
 import math
 from dataset import HandWrittenDataset, Align, collate_fn, DataAugment, OtsuGrayscale
-from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR
+from config import LABEL_FILE, PUBLIC_TEST_DIR, TRAIN_DIR, SYNTH_LABEL_FILE, SYNTH_TRAIN_DIR, SYNTH_LABEL_FILE2, SYNTH_TRAIN_DIR2
 from tools import make_submission, tone_encode, build_converter, build_model
 from baseline import LightningModel
 from test import predict
@@ -129,14 +129,19 @@ def get_data(
 
     # Add SynthText data
     if args.synth:
+        if args.synth == 1:
+            synth_data_path = SYNTH_TRAIN_DIR
+            synth_label_path = SYNTH_LABEL_FILE
+        elif args.synth == 2:
+            synth_data_path = SYNTH_TRAIN_DIR2
+            synth_label_path = SYNTH_LABEL_FILE2
         synth_dataset = HandWrittenDataset(
-            SYNTH_TRAIN_DIR, SYNTH_LABEL_FILE,
+            synth_data_path, synth_label_path,
             name='gen_image', transform=test_transform if not args.synth_augment else train_transform
         )
-        print('Using SynthText data for training')
-
         # Filter out the long labels
-        synth_label_file = pd.read_csv(SYNTH_LABEL_FILE, sep='\t', header=None, na_filter=False)
+        synth_label_file = pd.read_csv(synth_label_path, sep='\t', header=None, na_filter=False)
+        print('Using SynthText data for training')
         if args.tone:
             synth_label_file[1] = synth_label_file[1].apply(tone_encode)
         synth_inds =  np.arange(len(synth_dataset))[(synth_label_file[1].str.len() < args.max_len)]
