@@ -15,6 +15,7 @@ data/images/
 saved_models/*.pt
 ensemble/val/*.csv
 ensemble/test/*.csv
+ensemble/*.txt
 checkpoints/*/
 augmentation/frost/
 augmentation/images/
