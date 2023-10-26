@@ -35,25 +35,14 @@ RUN python3 -m pip install --upgrade pip
 RUN pip3 install torch torchvision torchaudio -f https://download.pytorch.org/whl/cu111/torch_stable.html
 RUN pip3 install -r requirements.txt
 
-
 # Install tensorflow
 # RUN pip3 install nvidia-cudnn-cu11==8.6.0.163
 RUN pip3 install tensorflow==2.12.0
 
-# Clone code
+
+# Copy all files in the current directory to the working directory
 WORKDIR /app
-RUN git clone https://github.com/Minhchuyentoancbn/Deep-Learning.git text_recognition
-WORKDIR /app/text_recognition
-COPY scripts/ /app/text_recognition/scripts
+COPY . /app
 
-WORKDIR /app
-
-# Copy data scripts
-COPY scripts/prepare_data.sh /app/prepare_data.sh
-
-# Copy prediction results
-COPY predictions/ /app/text_recognition/predictions
-
-COPY scrabble-gan /app/scrabble-gan
 
 CMD [ "/bin/bash" ]
