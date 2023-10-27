@@ -17,7 +17,9 @@ data/synthesis_2/
 saved_models/*.pt
 ensemble/val/*.csv
 ensemble/test/*.csv
+ensemble/private_test/*.csv
 ensemble/*.txt
+ensemble/*.csv
 checkpoints/*/
 
 augmentation/frost/
