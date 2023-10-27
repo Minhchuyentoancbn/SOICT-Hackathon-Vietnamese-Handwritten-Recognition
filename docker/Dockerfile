@@ -35,10 +35,6 @@ RUN python3 -m pip install --upgrade pip
 RUN pip3 install torch torchvision torchaudio -f https://download.pytorch.org/whl/cu111/torch_stable.html
 RUN pip3 install -r requirements.txt
 
-# Install tensorflow
-# RUN pip3 install nvidia-cudnn-cu11==8.6.0.163
-RUN pip3 install tensorflow==2.12.0
-
 
 # Copy all files in the current directory to the working directory
 WORKDIR /app
