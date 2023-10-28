@@ -65,9 +65,11 @@ class PrivateDataset(Dataset):
         try:
             img_name = f'{self.name}_{real_idx}.jpg'
             image = Image.open(os.path.join(self.root_dir, img_name))
+            image = image.convert('RGB')
         except:
             img_name = f'{self.name}_{real_idx}.png'
             image = Image.open(os.path.join(self.root_dir, img_name))
+            image = image.convert('RGB')
         # Transform image
         if self.transform:
             image = self.transform(image)
@@ -205,30 +207,31 @@ def get_rotate_test_data(
 
 if __name__ == '__main__':
 
+    model_name = sys.argv[1]
     # Predict no rotation
-    final = [
-        'model9_full', 'model5_tone_full', 'model3_tone_full', 'model19_new_full', 'model34_tone_full', 'model30_tone_full', 'model15_new_full', 'model15_synth_tone_full', 'model34_full', 'model10_synth_full', 'model30_synth_full', 'model27_full', 'model15_full',
-        'model2_new_full', 'model19_full', 'model35_tone_full', 'model5_new_full', 'model20_tone_full', 'model26_synth_full', 'model1_synth_full', 'model15_synth_new_full', 'model4_synth_new_full', 'model31_full', 'model1_full', 'model33_tone_full', 'model3_synth_full', 'model2_full', 
-        'model13_full', 'model30_full', 'model32_full', 'model7_full', 'model2_synth_full', 'model17_new_full', 'model3_new_full', 'model5_synth_full', 'model35_synth_full', 'model20_full', 'model6_new_full', 'model8_synth_full', 'model29_full', 'model14_full', 'model4_synth_full', 'model19_synth_new_full', 
-        'model5_synth_tone_full', 'model18_new_full', 'model5_synth_new_full', 'model17_full', 'model35_full', 'model19_synth_new_tone_full', 'model5_full', 'model10_synth_new_full', 'model10_full'
-    ]
-    for model_name in final:
+    # final = [
+    #     'model9_full', 'model5_tone_full', 'model3_tone_full', 'model19_new_full', 'model34_tone_full', 'model30_tone_full', 'model15_new_full', 'model15_synth_tone_full', 'model34_full', 'model10_synth_full', 'model30_synth_full', 'model27_full', 'model15_full',
+    #     'model2_new_full', 'model19_full', 'model35_tone_full', 'model5_new_full', 'model20_tone_full', 'model26_synth_full', 'model1_synth_full', 'model15_synth_new_full', 'model4_synth_new_full', 'model31_full', 'model1_full', 'model33_tone_full', 'model3_synth_full', 'model2_full', 
+    #     'model13_full', 'model30_full', 'model32_full', 'model7_full', 'model2_synth_full', 'model17_new_full', 'model3_new_full', 'model5_synth_full', 'model35_synth_full', 'model20_full', 'model6_new_full', 'model8_synth_full', 'model29_full', 'model14_full', 'model4_synth_full', 'model19_synth_new_full', 
+    #     'model5_synth_tone_full', 'model18_new_full', 'model5_synth_new_full', 'model17_full', 'model35_full', 'model19_synth_new_tone_full', 'model5_full', 'model10_synth_new_full', 'model10_full'
+    # ]
+    # for model_name in final:
         # Set seed
-        pl.seed_everything(42)
-        torch.backends.cudnn.benchmark = True
-        torch.backends.cudnn.deterministic = True
+    pl.seed_everything(42)
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.deterministic = True
 
-        model, converter, args = load_model(model_name, MODEL_PATH)
+    model, converter, args = load_model(model_name, MODEL_PATH)
 
-        # Get the data
-        test_loader, test_set = get_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args)
+    # Get the data
+    test_loader, test_set = get_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args)
 
-        # Make submission
-        preds, img_names, confidences = predict(model, test_loader, converter, args.prediction, args.max_len, args.transformer)
+    # Make submission
+    preds, img_names, confidences = predict(model, test_loader, converter, args.prediction, args.max_len, args.transformer)
 
-        # Save the confidence for later ensemble
-        df = pd.DataFrame({'img_name': img_names, 'confidence': confidences, 'pred': preds})
-        df.to_csv(f'ensemble/private_test/{model_name}.csv', index=False)
+    # Save the confidence for later ensemble
+    df = pd.DataFrame({'img_name': img_names, 'confidence': confidences, 'pred': preds})
+    df.to_csv(f'ensemble/private_test/{model_name}.csv', index=False)
 
     # test_frame0 = df
 
