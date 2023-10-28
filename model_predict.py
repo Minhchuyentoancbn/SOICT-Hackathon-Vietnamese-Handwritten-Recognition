@@ -8,7 +8,7 @@ import pytorch_lightning as pl
 from PIL import Image
 from tools import load_model
 from test import predict
-from config import PRIVATE_TEST_DIR
+from config import PRIVATE_TEST_DIR, MODEL_PATH
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
 from dataset import Align, OtsuGrayscale
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = True
 
-    model, converter, args = load_model(model_name)
+    model, converter, args = load_model(model_name, MODEL_PATH)
 
     # Get the data
     test_loader, test_set = get_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args)
