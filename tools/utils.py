@@ -1,13 +1,8 @@
 import torch
 import torch.nn.functional as F
 import pickle
-import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
 
-from torchvision import transforms
-from torch.utils.data import DataLoader
-from dataset import HandWrittenDataset, Align, OtsuGrayscale
 from baseline import Model
 from models.parseq import PARSeq
 from models.abinet import ABINet
@@ -367,63 +362,3 @@ def postprocess(pred, pred_max_prob, transformer, prediction):
 
     return pred, confidence_score
 
-
-def get_test_data(
-        path,
-        name='public_test_img',
-        batch_size: int = 64,
-        seed: int = 42,
-        args=None
-    ):
-    """
-    Get the train, validation and test data loaders
-
-    Arguments:
-    ----------
-    path: str
-        The path to the data
-
-    name: str
-        The name of the dataset
-    
-    batch_size: int (default: 64)
-        The batch size to use for the data loaders
-
-    seed: int (default: 42)
-        The seed used to spli the data
-
-    args:
-        The arguments passed to the program
-        
-    Returns:
-    --------
-        train_loader, val_loader, test_loader, train_set, val_set, test_set
-    """
-    pl.seed_everything(seed)
-    np.random.seed(seed)
-
-    # Get the transforms
-    if args.grayscale:
-        if args.otsu:
-            grayscale = OtsuGrayscale()
-        else:
-            grayscale = transforms.Grayscale()
-        align = Align(1, args.height, args.width, args.keep_ratio_with_pad, args.transformer)  # 1 channel for grayscale
-    else:
-        grayscale = transforms.Compose([])  # Do nothing
-        align = Align(3, args.height, args.width, args.keep_ratio_with_pad, args.transformer)
-    
-    test_transform = transforms.Compose([
-        grayscale,
-        align
-    ])
-
-    test_dataset = HandWrittenDataset(
-        path,
-        name=name, transform=test_transform
-    )
-    test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=args.pin_memory
-    )
-
-    return test_loader,  test_dataset
