@@ -242,7 +242,7 @@ if __name__ == '__main__':
     test_confidences = np.max(test_confidences, axis=1)
 
     test = pd.DataFrame({'img_name': test_img_names, 'pred': test_pred, 'confidence': test_confidences})
-    test.to_csv(f'ensemble/private_test/{name}_aug15.csv', index=False)
+    test.to_csv(f'ensemble/private_test/{model_name}_aug15.csv', index=False)
 
 
     test_frames = [df, ]
@@ -261,5 +261,5 @@ if __name__ == '__main__':
     test_confidences = np.max(test_confidences, axis=1)
 
     test = pd.DataFrame({'img_name': test_img_names, 'pred': test_pred, 'confidence': test_confidences})
-    test.to_csv(f'ensemble/private_test/{name}_aug10.csv', index=False)
+    test.to_csv(f'ensemble/private_test/{model_name}_aug10.csv', index=False)
     
