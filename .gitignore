@@ -13,6 +13,7 @@ data/val_set/
 data/synthesis/
 data/images/
 data/synthesis_2/
+data/NAVER_OCR_private_test_update/
 
 saved_models/*.pt
 ensemble/val/*.csv
