@@ -1,6 +1,6 @@
 python3 main.py \
 --epochs 26 \
---lr 1e-3\
+--lr 1e-3 \
 --weight_decay 1e-4 \
 --batch_size 64 \
 --dropout 0.2 \
