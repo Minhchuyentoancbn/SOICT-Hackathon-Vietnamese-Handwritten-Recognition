@@ -1,0 +1,16 @@
+python3 main.py \
+--epochs 35 \
+--lr 1e-4 \
+--momentum 0.9 \
+--weight_decay 1e-4 \
+--batch_size 128 \
+--dropout 0.2 \
+--optim adamw \
+--scheduler 1 --decay_epochs 17 25 \
+--model_name model9_full \
+--val_check_interval 1.0 \
+--feature_extractor resnet \
+--prediction srn \
+--height 64 --width 256 \
+--grayscale 0 --keep_ratio_with_pad 1 \
+--stn_on 0 --count_mark 1 --train 0

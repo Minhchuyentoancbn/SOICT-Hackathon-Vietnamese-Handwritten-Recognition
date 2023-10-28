@@ -1,0 +1,19 @@
+python3 main.py \
+--epochs 30 \
+--lr 5e-4 \
+--momentum 0.8 \
+--weight_decay 1e-3 \
+--batch_size 64 \
+--dropout 0.2 \
+--optim adamw \
+--scheduler 1 \
+--decay_epochs 17 21 --decay_rate 0.2 \
+--model_name model1_full \
+--val_check_interval 1.0 \
+--feature_extractor densenet \
+--prediction ctc \
+--height 64 \
+--width 256 \
+--grayscale 1 --keep_ratio_with_pad 1 \
+--stn_on 0 \
+--focal_loss 1 --focal_loss_alpha 0.5 --focal_loss_gamma 0.5 --train 0

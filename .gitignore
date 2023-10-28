@@ -28,7 +28,6 @@ augmentation/images/
 scrabble-gan/
 
 predictions/*.csv
-scripts/*.sh
 
 deep-text-recognition-benchmark/
 

@@ -1,0 +1,17 @@
+python3 main.py \
+--epochs 15 \
+--lr 1e-4 \
+--momentum 0.8 \
+--weight_decay 1e-3 \
+--batch_size 64 \
+--optim adamw \
+--scheduler 1 \
+--decay_epochs 3 7 --decay_rate 0.1 \
+--model_name model2_full \
+--val_check_interval 1.0 \
+--transformer 1 \
+--transformer_model vitstr_base_patch16_224 \
+--height 224 \
+--width 224 \
+--grayscale 1 --keep_ratio_with_pad 1 \
+--stn_on 0 --label_smoothing 0.1 --train 0

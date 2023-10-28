@@ -1,0 +1,16 @@
+python3 main.py \
+--epochs 24 \
+--lr 1e-3 \
+--weight_decay 1e-4 \
+--batch_size 64 \
+--dropout 0.2 \
+--optim adamw --timm_optim 1 \
+--scheduler 1 --one_cycle 1 \
+--model_name model1_synth \
+--val_check_interval 1.0 \
+--feature_extractor densenet \
+--prediction ctc \
+--height 64 \
+--width 256 \
+--grayscale 1 --keep_ratio_with_pad 1 \
+--focal_loss 1 --focal_loss_alpha 0.5 --focal_loss_gamma 0.5 --synth 2

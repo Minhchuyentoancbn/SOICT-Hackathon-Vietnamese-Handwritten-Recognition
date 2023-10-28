@@ -1,0 +1,14 @@
+python3 main.py \
+--epochs 29 \
+--lr 2e-4 \
+--weight_decay 1e-5 \
+--batch_size 64 \
+--optim adamw --timm_optim 1 \
+--scheduler 1 --one_cycle 1 \
+--model_name model32_full \
+--val_check_interval 1.0 \
+--prediction cppd \
+--feature_extractor resnet \
+--height 64 --width 256 \
+--grayscale 0 --keep_ratio_with_pad 0 --stn_on 1 \
+--label_smoothing 0.1 --count_mark 1 --train 0
