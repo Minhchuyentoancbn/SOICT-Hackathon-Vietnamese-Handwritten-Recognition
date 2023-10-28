@@ -11,7 +11,7 @@ from test import predict
 from config import PRIVATE_TEST_DIR, MODEL_PATH
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
-from dataset import Align, OtsuGrayscale
+from dataset import Align, OtsuGrayscale, RotationTransform
 
 
 class PrivateDataset(Dataset):
@@ -229,7 +229,7 @@ if __name__ == '__main__':
     test_frames = [df, ]
     for i, degree in enumerate([-15, 15]):
         # Get the data
-        test_loader = get_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args, degree=degree)
+        test_loader = get_rotate_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args, degree=degree)
         preds, img_names, confidences = predict(model, test_loader, converter, args.prediction, args.max_len, args.transformer)
         test_frame = pd.DataFrame({'img_name': img_names, 'pred': preds, 'confidence': confidences})
         test_frames.append(test_frame)
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     test_frames = [df, ]
     for i, degree in enumerate([-10, 10]):
         # Get the data
-        test_loader = get_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args, degree=degree)
+        test_loader = get_rotate_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args, degree=degree)
         preds, img_names, confidences = predict(model, test_loader, converter, args.prediction, args.max_len, args.transformer)
         test_frame = pd.DataFrame({'img_name': img_names, 'pred': preds, 'confidence': confidences})
         test_frames.append(test_frame)
