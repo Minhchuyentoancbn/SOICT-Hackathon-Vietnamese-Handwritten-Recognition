@@ -163,7 +163,7 @@ def read_scripts(name):
     return command
 
 
-def load_model(name):
+def load_model(name, model_path='saved_models'):
     """
     Load the model state dict from file.
 
@@ -190,7 +190,7 @@ def load_model(name):
     # Get the converter
     converter = build_converter(args)
     model = build_model(args, converter)
-    model.load_state_dict(torch.load(f'saved_models/{name}.pt'))
+    model.load_state_dict(torch.load(f'{model_path}/{name}.pt'))
     model.eval()
     model.to(device)
 
