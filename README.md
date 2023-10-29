@@ -6,7 +6,9 @@
 
 
 
-__NOTE__: Machine with GPU support is recommended.
+__NOTE__: 
+- Machine with GPU support is recommended.
+- Source code was written on Window operating system and models were trained on Kaggle platform. Running on Linux may encounter errors. Please inform us for proper support and debugging.
 
 ## 0. Project Structure
 - The high level structure of this project :
@@ -52,7 +54,6 @@ bash ./scripts/train_all.sh
 ```
 
 #### 2.1.2. Inference
-__NOTE__: Source code was written on Window operating system and models were trained on Kaggle platform. Running on Linux may encounter errors. Please inform us for proper support and debugging.
 
 - To infer all models on the private dataset, run the following command:
 ```bash
