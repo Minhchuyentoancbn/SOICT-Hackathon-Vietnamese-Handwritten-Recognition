@@ -231,43 +231,4 @@ if __name__ == '__main__':
         # Save the confidence for later ensemble
         df = pd.DataFrame({'img_name': img_names, 'confidence': confidences, 'pred': preds})
         df.to_csv(f'ensemble/private_test/{model_name}.csv', index=False)
-
-    # test_frame0 = df
-
-    # test_frames = [df, ]
-    # for i, degree in enumerate([-15, 15]):
-    #     # Get the data
-    #     test_loader = get_rotate_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args, degree=degree)
-    #     preds, img_names, confidences = predict(model, test_loader, converter, args.prediction, args.max_len, args.transformer)
-    #     test_frame = pd.DataFrame({'img_name': img_names, 'pred': preds, 'confidence': confidences})
-    #     test_frames.append(test_frame)
-
-    # test_confidences = np.array([test_frame['confidence'] for test_frame in test_frames]).T
-    # test_predictions = np.array([test_frame['pred'] for test_frame in test_frames]).T
-    # test_idx = np.argmax(test_confidences, axis=1)
-    # test_pred = [test_predictions[i, test_idx[i]] for i in range(len(test_idx))]
-    # test_img_names = test_frames[0]['img_name']
-    # test_confidences = np.max(test_confidences, axis=1)
-
-    # test = pd.DataFrame({'img_name': test_img_names, 'pred': test_pred, 'confidence': test_confidences})
-    # test.to_csv(f'ensemble/private_test/{model_name}_aug15.csv', index=False)
-
-
-    # test_frames = [df, ]
-    # for i, degree in enumerate([-10, 10]):
-    #     # Get the data
-    #     test_loader = get_rotate_test_data(PRIVATE_TEST_DIR, batch_size=args.batch_size, seed=args.seed, args=args, degree=degree)
-    #     preds, img_names, confidences = predict(model, test_loader, converter, args.prediction, args.max_len, args.transformer)
-    #     test_frame = pd.DataFrame({'img_name': img_names, 'pred': preds, 'confidence': confidences})
-    #     test_frames.append(test_frame)
-
-    # test_confidences = np.array([test_frame['confidence'] for test_frame in test_frames]).T
-    # test_predictions = np.array([test_frame['pred'] for test_frame in test_frames]).T
-    # test_idx = np.argmax(test_confidences, axis=1)
-    # test_pred = [test_predictions[i, test_idx[i]] for i in range(len(test_idx))]
-    # test_img_names = test_frames[0]['img_name']
-    # test_confidences = np.max(test_confidences, axis=1)
-
-    # test = pd.DataFrame({'img_name': test_img_names, 'pred': test_pred, 'confidence': test_confidences})
-    # test.to_csv(f'ensemble/private_test/{model_name}_aug10.csv', index=False)
     

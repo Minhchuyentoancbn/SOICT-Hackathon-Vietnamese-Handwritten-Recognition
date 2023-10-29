@@ -1,7 +1,6 @@
 *.pdf
 *.zip
 
-*.ipynb
 
 *__pycache__*
 
@@ -32,8 +31,6 @@ scrabble-gan/
 predictions/*.csv
 
 deep-text-recognition-benchmark/
-
-
 
 steel_ocr-main/
 

@@ -7,11 +7,11 @@ PUBLIC_TEST_DIR = 'data/new_public_test/'
 SYNTH_TRAIN_DIR = 'data/synthesis2/'  # SynthText
 SYNTH_TRAIN_DIR2 = 'data/synthesis/'  # SynthText
 
-# PRIVATE_TEST_DIR = 'data/NAVER_OCR_private_test_update/'  # Private test
-# MODEL_PATH = 'saved_models'
+PRIVATE_TEST_DIR = 'data/NAVER_OCR_private_test_update/'  # Private test
+MODEL_PATH = 'saved_models'
 
-PRIVATE_TEST_DIR = '/kaggle/input/private-test-v2-hog/'  # Private test
-MODEL_PATH = '/kaggle/input/model-weights/saved_models/'
+# PRIVATE_TEST_DIR = '/kaggle/input/private-test-v2-hog/'  # Private test
+# MODEL_PATH = '/kaggle/input/model-weights/saved_models/'
 
 # For Kaggle
 # PUBLIC_TEST_DIR = '/kaggle/input/ocr-hackathon-v4/public_test_data/new_public_test'
