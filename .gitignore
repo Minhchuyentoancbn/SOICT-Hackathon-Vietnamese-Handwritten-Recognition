@@ -1,6 +1,4 @@
-*.pdf
 *.zip
-
 
 *__pycache__*
 
@@ -29,7 +27,3 @@ augmentation/images/
 scrabble-gan/
 
 predictions/*.csv
-
-deep-text-recognition-benchmark/
-
-steel_ocr-main/
